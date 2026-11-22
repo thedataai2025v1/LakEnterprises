@@ -1,0 +1,30 @@
+for this project, we will be geting prd.md,hdd.md, llld.md
+then you can proceed for next development of the project
+Step 1:
+  Create CLAUDE.md
+
+Step 2:
+  pip install uv
+  uv --version
+  uv init
+  uv venv
+  .venv\Scripts\activate
+  python --version
+  create requrements.txt file
+        add langgraph, langchhain-openai, chromadb, python-dotenvpe  uv add -r requ uv rrementr req
+  uv add -r requirements.txt
+  uv add sqllite
+
+
+Step 3:
+ create Git repo
+ update .gitignore
+ commit and push
+
+
+
+
+
+
+
+ 

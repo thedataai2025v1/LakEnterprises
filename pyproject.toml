@@ -1,0 +1,21 @@
+[project]
+name = "lakenterprises"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "thedataai2025v1", email = "thedataai2025@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "langchain>=1.5.2",
+    "langgraph>=1.2.24",
+    "openai>=3.57.0",
+]
+
+[project.scripts]
+lakenterprises = "lakenterprises:main"
+
+[build-system]
+requires = ["uv_build>=0.13.9,<0.14.0"]
+build-backend = "uv_build"

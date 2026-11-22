@@ -1,0 +1,9 @@
+prompt 1:
+you have access to 'C:\Lak-Learn\Lak_AI\Agentic-AI-Projs\LakEnterprises\docs'
+having 00-problem.md, 01-prd.md, 02-hld.md files,
+now analyse and create the CLAUDE.md file for this project which is the brain of this application.
+
+used model: Opus or Sonnnet
+
+
+
