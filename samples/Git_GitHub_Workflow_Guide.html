@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git_GitHub_Workflow_Guide.md</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 900px; margin: 2rem auto; padding: 2rem; line-height: 1.7; color: #212529; }
+        h1 { font-size: 2rem; margin: 1.5rem 0 1rem; border-bottom: 2px solid #e9ecef; padding-bottom: 0.5rem; }
+        h2 { font-size: 1.5rem; margin: 1.25rem 0 0.75rem; }
+        h3 { font-size: 1.25rem; margin: 1rem 0 0.5rem; }
+        p { margin: 0.75rem 0; }
+        ul, ol { margin: 0.75rem 0; padding-left: 2rem; }
+        blockquote { border-left: 4px solid #667eea; padding-left: 1rem; margin: 1rem 0; color: #6c757d; }
+        code { background: #f8f9fa; padding: 0.2rem 0.4rem; border-radius: 3px; font-family: Monaco, Menlo, monospace; font-size: 0.9em; }
+        pre { background: #282c34; color: #abb2bf; padding: 1rem; border-radius: 6px; overflow-x: auto; }
+        pre code { background: none; color: inherit; padding: 0; }
+        table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+        th, td { border: 1px solid #dee2e6; padding: 0.75rem; text-align: left; }
+        th { background: #f8f9fa; font-weight: 600; }
+        a { color: #667eea; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .diagram{position:relative;margin:1.5rem 0;text-align:center;padding:1rem 1rem 2.5rem;border:1px solid #e9ecef;border-radius:6px;background:#fff;overflow-x:auto;overflow-y:visible}.diagram svg{display:block;margin:0 auto;max-width:100%;height:auto;overflow:visible!important}.diagram svg foreignObject{overflow:visible!important}.diagram svg foreignObject{overflow:visible}.diagram-controls{position:absolute;top:.5rem;right:.5rem;display:flex;gap:.25rem;flex-wrap:wrap;justify-content:flex-end}.diagram-btn{padding:.25rem .5rem;font-size:.7rem;background:#fff;color:#667eea;border:1px solid #667eea;border-radius:3px;cursor:pointer}.diagram-btn:hover{background:#667eea;color:#fff}.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000}.modal.active{display:block}.diagram-window{position:fixed;display:flex;flex-direction:column;background:#fff;border-radius:8px;box-shadow:0 16px 48px rgba(0,0,0,.35);border:1px solid #ced4da;min-width:420px;min-height:300px;z-index:1001;overflow:hidden}.diagram-window.maximized{top:0!important;left:0!important;width:100vw!important;height:100vh!important;border-radius:0}.diagram-window.maximized .resize-handle{display:none}.diagram-window-header{display:flex;align-items:center;justify-content:space-between;padding:.45rem .6rem;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;cursor:move;user-select:none}.diagram-window-title{font-size:.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.diagram-window-controls{display:flex;gap:.25rem}.win-btn{width:28px;height:24px;border:none;border-radius:4px;background:rgba(255,255,255,.2);color:#fff;cursor:pointer}.diagram-window-body{flex:1;display:flex;flex-direction:column;min-height:0;padding:.75rem;overflow:hidden}.modal-toolbar{display:flex;flex-wrap:wrap;gap:.5rem;padding-bottom:.75rem;border-bottom:1px solid #e9ecef;margin-bottom:.75rem}.modal-toolbar button{padding:.375rem .75rem;background:#667eea;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:.8rem}.zoom-level{font-size:.8rem;color:#6c757d;min-width:3.5rem;text-align:center}.modal-diagram-viewport{flex:1;min-height:120px;overflow:hidden;background:#fafafa;border:1px solid #e9ecef;border-radius:6px;cursor:grab}.modal-diagram-viewport.panning{cursor:grabbing}.modal-diagram-inner{display:flex;align-items:center;justify-content:center;min-height:100%;padding:1rem;transform-origin:center}.modal-hint{font-size:.75rem;color:#6c757d;margin-top:.5rem;text-align:center}.resize-handle{position:absolute;z-index:30}.resize-n{top:-3px;left:8px;right:8px;height:6px;cursor:ns-resize}.resize-s{bottom:-3px;left:8px;right:8px;height:6px;cursor:ns-resize}.resize-e{top:8px;right:-3px;bottom:8px;width:6px;cursor:ew-resize}.resize-w{top:8px;left:-3px;bottom:8px;width:6px;cursor:ew-resize}.resize-ne{top:-4px;right:-4px;width:12px;height:12px;cursor:nesw-resize}.resize-nw{top:-4px;left:-4px;width:12px;height:12px;cursor:nwse-resize}.resize-se{bottom:-4px;right:-4px;width:12px;height:12px;cursor:nwse-resize}.resize-sw{bottom:-4px;left:-4px;width:12px;height:12px;cursor:nesw-resize}
+    </style>
+</head>
+<body>
+<p><strong>Git &amp; GitHub Workflow Guide</strong></p>
+<p>CloudDesk — Autonomous Customer Support &amp; Resolution Platform</p>
+<p><em>Version 1.0  |  Last updated: October 23, 2026</em></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Audience</td>
+<td>Contributors: backend, frontend, RAG, infra, and QA</td>
+</tr>
+<tr>
+<td>Repository</td>
+<td><a href="https://github.com/anulsasidharan/CloudDesk.git">https://github.com/anulsasidharan/CloudDesk.git</a></td>
+</tr>
+<tr>
+<td>GitHub account</td>
+<td>anulsasidharan</td>
+</tr>
+<tr>
+<td>Default integration branch</td>
+<td>development</td>
+</tr>
+<tr>
+<td>Long-lived branches</td>
+<td>development, testing, main</td>
+</tr>
+<tr>
+<td>Task tracker</td>
+<td>TASKS.md — one feature/&lt;name&gt; branch per sub-task</td>
+</tr>
+<tr>
+<td>Remote status</td>
+<td>Empty as of October 23, 2026. No commits have been pushed.</td>
+</tr>
+</tbody></table>
+<p>This guide is how code moves for CloudDesk. Feature work branches from development and merges back through a pull request. testing and main are promotion branches for staging and production. Follow it so main stays releasable and every sub-task in TASKS.md has one reviewable branch.</p>
+<h1>Contents</h1>
+<ul>
+<li><ol>
+<li>Branch model at a glance</li>
+</ol>
+</li>
+<li><ol start="2">
+<li>Before you start</li>
+</ol>
+</li>
+<li><ol start="3">
+<li>First-time setup</li>
+</ol>
+</li>
+<li><ol start="4">
+<li>Daily workflow (feature → development)</li>
+</ol>
+</li>
+<li><ol start="5">
+<li>Pull requests</li>
+</ol>
+</li>
+<li><ol start="6">
+<li>Promoting code: development → testing → main</li>
+</ol>
+</li>
+<li><ol start="7">
+<li>Branch naming</li>
+</ol>
+</li>
+<li><ol start="8">
+<li>CloudDesk checks before you open a PR</li>
+</ol>
+</li>
+<li><ol start="9">
+<li>Quick reference</li>
+</ol>
+</li>
+<li><ol start="10">
+<li>Questions</li>
+</ol>
+</li>
+</ul>
+<h1>1. Branch model at a glance</h1>
+<p>Three long-lived branches. Day-to-day work targets development only. The GitHub repository is empty until the first push, so main, development, and testing do not exist there yet. Section 3 creates them. After that, do not recreate them per feature.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Branch</strong></th>
+<th><strong>Purpose</strong></th>
+<th><strong>Who merges here</strong></th>
+<th><strong>What it represents</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>development</td>
+<td>Integration branch for active work</td>
+<td>Contributors, via a PR from feature/* or bugfix/*</td>
+<td>Dev / integration. Not a production deploy.</td>
+</tr>
+<tr>
+<td>testing</td>
+<td>QA and staging validation</td>
+<td>Release owner</td>
+<td>Staging. Apply still needs a reviewed plan.</td>
+</tr>
+<tr>
+<td>main</td>
+<td>Code that is allowed to ship</td>
+<td>Release owner</td>
+<td>Production candidate. A merge is not itself a deploy.</td>
+</tr>
+</tbody></table>
+<p><strong>Rules</strong></p>
+<ul>
+<li>Create every feature branch from an up-to-date development.</li>
+<li>Open every feature pull request into development. Do not open it into testing or main.</li>
+<li>Do not push commits directly to development, testing, or main.</li>
+<li>Do not stack a feature branch on another feature branch. If TASKS.md names a predecessor, merge that predecessor first.</li>
+<li>One sub-task in TASKS.md is one branch, one pull request, and one status change to Completed ✅ after merge.</li>
+<li>A merge to main does not mean the cloud environment is deployed. MEMORY.md stays honest until a real apply has happened.</li>
+</ul>
+<h1>2. Before you start</h1>
+<h2>Access</h2>
+<ul>
+<li>Use the GitHub account that owns <a href="https://github.com/anulsasidharan/CloudDesk">https://github.com/anulsasidharan/CloudDesk</a>. Collaborators need write access before they can push.</li>
+<li>Confirm the repository page loads. As of October 23, 2026 it has no commits.</li>
+<li>Turn on two-factor authentication on the GitHub account.</li>
+<li>Prefer HTTPS with GitHub CLI, or SSH if you already have a key on the account. Do not put tokens in the repo.</li>
+</ul>
+<h2>Tools to install</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Tool</strong></th>
+<th><strong>Version</strong></th>
+<th><strong>Notes</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Git</td>
+<td>2.40+</td>
+<td>Git for Windows includes Git Bash. PowerShell is the shell used in this project.</td>
+</tr>
+<tr>
+<td>GitHub CLI (gh)</td>
+<td>Latest</td>
+<td>Recommended for pull requests from the terminal.</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>3.12</td>
+<td>Backend, agents, RAG, and pytest. Use .venv\Scripts\python.exe.</td>
+</tr>
+<tr>
+<td>Node.js</td>
+<td>22</td>
+<td>Next.js 15 console. Frontend image uses node:22-alpine.</td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>Current</td>
+<td>Compose stack: frontend, backend, redis, qdrant.</td>
+</tr>
+<tr>
+<td>Editor</td>
+<td>Cursor or VS Code</td>
+<td>Python, TypeScript, and Docker extensions.</td>
+</tr>
+</tbody></table>
+<p><strong>Verify:</strong></p>
+<pre><code>git --version
+gh --version
+python --version
+node --version
+docker --version
+</code></pre>
+<h2>Read first</h2>
+<p>Read these before the first feature branch. CLAUDE.md wins if another file disagrees with it.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Document</strong></th>
+<th><strong>Why</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CLAUDE.md</td>
+<td>Specification: layers, domain, tools, workflow, and what must never happen.</td>
+</tr>
+<tr>
+<td>TASKS.md</td>
+<td>The sub-task you are doing, its feature/&lt;name&gt; branch, and Pending ❌ or Completed ✅.</td>
+</tr>
+<tr>
+<td>PLAN_PHASE.md</td>
+<td>Exit criteria, tests, and the demo checkpoint for the phase.</td>
+</tr>
+<tr>
+<td>PLAN.md</td>
+<td>Requirement catalog F1–F14 and N1–N8.</td>
+</tr>
+<tr>
+<td>MEMORY.md</td>
+<td>Locked decisions and honest status. Update it when status changes.</td>
+</tr>
+<tr>
+<td>docs/ARCHITECTURE.md</td>
+<td>Component and infrastructure diagrams.</td>
+</tr>
+<tr>
+<td>.cursor/skills/clouddesk-support/SKILL.md</td>
+<td>How to implement a change in this repo.</td>
+</tr>
+<tr>
+<td>docs/API_CONTRACT.md</td>
+<td>Route and payload shapes. Keep it aligned with schemas and frontend/lib/types.ts when a route changes.</td>
+</tr>
+</tbody></table>
+<h1>3. First-time setup</h1>
+<p>The GitHub repository is empty. The working copy on disk already has the specification files (CLAUDE.md, TASKS.md, PLAN.md, PLAN_PHASE.md, MEMORY.md, docs/ARCHITECTURE.md, and this guide). Connect that copy to the remote, then create the three long-lived branches. Do this once.</p>
+<h2>Configure your identity (once per machine)</h2>
+<p>Use the same email as the GitHub account so commits attach to the profile.</p>
+<pre><code>git config --global user.name "Your Full Name"
+git config --global user.email "you@example.com"
+</code></pre>
+<h2>Seed the empty remote</h2>
+<p>From the project directory, in PowerShell. Skip git init if the folder is already a repository.</p>
+<pre><code>cd C:\Users\anuls\Videos\Euron_AgenticAI1.0
+git init
+git checkout -b main
+git add CLAUDE.md MEMORY.md PLAN.md PLAN_PHASE.md TASKS.md docs .cursor/skills Git_GitHub_Workflow_Guide.docx
+git status
+git commit -m "docs: add CloudDesk specification and git workflow"
+git remote add origin https://github.com/anulsasidharan/CloudDesk.git
+git push -u origin main
+git checkout -b development
+git push -u origin development
+git checkout main
+git checkout -b testing
+git push -u origin testing
+git checkout development
+</code></pre>
+<p>Before that first commit, git status must not list any of these:</p>
+<ul>
+<li>.env, credentials, or any real API key</li>
+<li>data/, *.db, or checkpoints</li>
+<li>terraform.tfvars, backend.hcl, or tfplan</li>
+<li>The service-role key</li>
+</ul>
+<p>SSH remote, if you use keys:</p>
+<pre><code>git remote add origin git@github.com:anulsasidharan/CloudDesk.git
+</code></pre>
+<h2>Clone later, after the remote has commits</h2>
+<pre><code>git clone https://github.com/anulsasidharan/CloudDesk.git
+cd CloudDesk
+git fetch origin
+git checkout development
+git pull origin development
+</code></pre>
+<p>Optional GitHub CLI login:</p>
+<pre><code>gh auth login
+</code></pre>
+<p>Choose HTTPS or SSH and finish in the browser. gh auth login does not store a token in the repository.</p>
+<h2>Local runtime, after the code exists</h2>
+<p>These commands matter from Phase 1 onward. They are not required to push the specification.</p>
+<pre><code>python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+$env:PYTHONPATH = "backend"
+$env:PYTHONIOENCODING = "utf-8"
+Copy-Item .env.example .env
+</code></pre>
+<p>DEMO_MODE=true, LLM_PROVIDER=fake, VECTOR_STORE=memory, and USE_FAKE_REDIS=true are the offline defaults. Tests must pass with no API key. get_settings() is cached, so restart the server after an .env change.</p>
+<h1>4. Daily workflow (feature → development)</h1>
+<p>Use this cycle for every row in TASKS.md. Start with P1-1 on feature/backend-config-logging. Phases 4, 5, 6, and 7 can run in parallel only after their listed predecessors are on development.</p>
+<h2>Step 1 — Sync development</h2>
+<pre><code>git checkout development
+git pull origin development
+</code></pre>
+<h2>Step 2 — Create the feature branch</h2>
+<p>Copy the branch name from the TASKS.md row. Do not invent a second name for the same sub-task.</p>
+<pre><code>git checkout -b feature/backend-config-logging
+</code></pre>
+<p>Examples from the tracker:</p>
+<ul>
+<li>feature/backend-config-logging — P1-1 settings and JSON logging</li>
+<li>feature/sqlalchemy-entities — P2-1 entities and the ten ticket categories</li>
+<li>feature/api-tickets — P4-2 create and read tickets</li>
+<li>feature/rag-hybrid-retriever — P5-3 hybrid retrieval</li>
+<li>feature/tool-registry-policy — P6-1 registry and approval policy</li>
+<li>feature/workflow-human-approval — P11-1 pause for a refund approval</li>
+<li>feature/frontend-ticket-actions — P13-3 approve, reject, reply, escalate</li>
+</ul>
+<h2>Step 3 — Implement and commit</h2>
+<p>Keep commits small. One logical change per commit. Present tense. A scope helps.</p>
+<pre><code>git add backend/app/core/config.py backend/app/core/logging.py
+git commit -m "feat(core): add settings and JSON logging with request id"
+</code></pre>
+<p>Message prefixes: feat, fix, docs, test, chore, infra.</p>
+<ul>
+<li>feat(api): accept tickets from email, chat, web, and API</li>
+<li>feat(workflow): pause CD-1002 until the refund is approved</li>
+<li>fix(guardrails): keep CD-1013 ticket text as data</li>
+<li>test(rag): expect the MFA article for the lockout query</li>
+<li>docs: record Phase 1 as validated locally in MEMORY.md</li>
+</ul>
+<p>Name the requirement in the test (F1–F14 or N1–N8). Stay inside one layer from CLAUDE.md section 4.2. Policy stays in code: agents/rules.py and backend/app/tools/policy.py.</p>
+<h2>Step 4 — Push and open a pull request</h2>
+<pre><code>git push -u origin feature/backend-config-logging
+</code></pre>
+<p>On GitHub, set base development and compare the feature branch. Or:</p>
+<pre><code>gh pr create --base development --head feature/backend-config-logging `
+  --title "feat(core): add settings and JSON logging" `
+  --body "## Summary`n- Add offline settings and JSON logs.`n`n## Related task`n- TASKS.md: P1-1`n`n## Test plan`n- [ ] Health tests pass offline"
+</code></pre>
+<p>In PowerShell the backtick continues the line. In Git Bash use a backslash instead.</p>
+<h2>Step 5 — Address review</h2>
+<pre><code>git add backend/app/core/logging.py
+git commit -m "fix(core): include workflow id on log lines"
+git push
+</code></pre>
+<p>The open pull request updates with the push. Re-request review when the comments are addressed. Do not open a second pull request for the same sub-task.</p>
+<h2>Step 6 — After the merge</h2>
+<pre><code>git checkout development
+git pull origin development
+git branch -d feature/backend-config-logging
+git fetch --prune
+</code></pre>
+<p>Set that TASKS.md row to Completed ✅ in a follow-up docs commit on the next branch, or in the same pull request if the tracker update is part of the sub-task. Delete the remote feature branch when GitHub offers it.</p>
+<h1>5. Pull requests</h1>
+<h2>Target branch</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Your branch</strong></th>
+<th><strong>Pull request base</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>feature/*</td>
+<td>development</td>
+</tr>
+<tr>
+<td>bugfix/*</td>
+<td>development</td>
+</tr>
+<tr>
+<td>hotfix/*</td>
+<td>main, then backport to development and testing</td>
+</tr>
+<tr>
+<td>development (promotion)</td>
+<td>testing</td>
+</tr>
+<tr>
+<td>testing (promotion)</td>
+<td>main</td>
+</tr>
+</tbody></table>
+<h2>Title</h2>
+<ul>
+<li>feat(tickets): create a ticket from email, chat, web, or API</li>
+<li>fix(auth): return 403 when a viewer runs a workflow</li>
+<li>test(workflow): CD-1002 pauses and resumes after approval</li>
+<li>docs: add the Eraser architecture diagrams</li>
+</ul>
+<h2>Description</h2>
+<pre><code>## Summary
+- What changed and why (1–3 bullets)
+## Related task
+- TASKS.md: P4-2 · Ticket API
+- Requirement: F1
+## Test plan
+- [ ] make test
+- [ ] make lint
+- [ ] Viewer token still receives 403 on run, reply, and approve
+- [ ] No .env, database, or cloud secret in the diff
+## Screenshots / notes
+- UI changes only. Say what you could not verify.
+</code></pre>
+<h2>Before requesting review</h2>
+<ul>
+<li>development is merged into the feature branch if it moved during the work (git checkout feature/... ; git merge origin/development).</li>
+<li>make test passes offline. make lint passes.</li>
+<li>A frontend change also has npm run lint and npm run test -- --run, and the ticket flow was checked in the browser when a server exists.</li>
+<li>A route or payload change updates docs/API_CONTRACT.md, backend/app/schemas/, and frontend/lib/types.ts together.</li>
+<li>A schema change adds a new database/migrations/000N_&lt;name&gt;.sql file and updates the model and database/schema.sql. Applied migrations are not edited.</li>
+<li>The diff contains no .env, data/, *.db, terraform.tfvars, backend.hcl, tfplan, or service-role key.</li>
+<li>MEMORY.md is updated when implementation, local validation, cloud credentials, or deploy state changed.</li>
+</ul>
+<h2>After merge</h2>
+<ul>
+<li>Delete the remote feature branch.</li>
+<li>Pull development before starting the next sub-task.</li>
+<li>Do not start a sub-task whose predecessor is still open.</li>
+</ul>
+<h1>6. Promoting code: development → testing → main</h1>
+<p>Promotion is a pull request between long-lived branches. It is not a feature branch. Feature authors do not merge into testing or main. A promotion pull request is not a cloud apply. deployment/scripts refuses --auto-approve for staging and prod. Production apply uses the GitHub Environment prod-apply with required reviewers, once those workflows exist. They do not exist yet.</p>
+<h2>development → testing</h2>
+<p>When development is stable for the phase exit criteria and the team wants a staging candidate.</p>
+<pre><code>git checkout testing
+git pull origin testing
+# Pull request: base testing, compare development
+</code></pre>
+<p><strong>Checklist</strong></p>
+<ul>
+<li>CI on development is green. Until GitHub Actions have been executed, say that they have not run.</li>
+<li>make test, and make demo for CD-1002 and CD-1005 once those checkpoints exist.</li>
+<li>Migrations are additive and backward compatible.</li>
+<li>No secret is in the tree.</li>
+</ul>
+<h2>testing → main</h2>
+<p>When staging behavior is accepted and a production candidate is intended. Merging main does not deploy.</p>
+<pre><code># Pull request: base main, compare testing
+</code></pre>
+<p><strong>Checklist</strong></p>
+<ul>
+<li>QA notes for the phase demo are written down.</li>
+<li>Security workflow results are acceptable, or the workflow has not been run yet and the PR says so.</li>
+<li>Rollback is the previous git SHA image, once images exist. Image tags equal the git SHA.</li>
+<li>The prod var-file is not the dev var-file. Apply waits for a reviewed plan.</li>
+</ul>
+<h2>Who does what</h2>
+<table>
+<thead>
+<tr>
+<th><strong>Action</strong></th>
+<th><strong>Owner</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Feature or bugfix PR into development</td>
+<td>The contributor doing the TASKS.md row</td>
+</tr>
+<tr>
+<td>development → testing</td>
+<td>Release owner</td>
+</tr>
+<tr>
+<td>testing → main</td>
+<td>Release owner</td>
+</tr>
+<tr>
+<td>Cloud apply from a tested image</td>
+<td>Release owner, after prod-apply review. Not done yet.</td>
+</tr>
+<tr>
+<td>hotfix/* from main</td>
+<td>Release owner, then backport to development and testing</td>
+</tr>
+</tbody></table>
+<h1>7. Branch naming</h1>
+<table>
+<thead>
+<tr>
+<th><strong>Pattern</strong></th>
+<th><strong>Use</strong></th>
+<th><strong>Create from</strong></th>
+<th><strong>Merge into</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>feature/&lt;name&gt;</td>
+<td>One TASKS.md sub-task</td>
+<td>development</td>
+<td>development</td>
+</tr>
+<tr>
+<td>bugfix/&lt;name&gt;</td>
+<td>A fix that is not a tracker row</td>
+<td>development</td>
+<td>development</td>
+</tr>
+<tr>
+<td>hotfix/&lt;name&gt;</td>
+<td>Urgent fix to released code</td>
+<td>main</td>
+<td>main, then backport</td>
+</tr>
+</tbody></table>
+<p><strong>Naming rules</strong></p>
+<ul>
+<li>Lowercase words separated by hyphens: feature/api-tickets.</li>
+<li>Use the branch string from TASKS.md when the row already has one.</li>
+<li>Do not use feature/fix-bug-2, feature/wip, or a person's name.</li>
+<li>A hotfix name says the fault: hotfix/viewer-can-approve.</li>
+</ul>
+<h1>8. CloudDesk checks before you open a PR</h1>
+<p>Run the checks that exist for the phase you are in. Do not claim a later checkpoint.</p>
+<table>
+<thead>
+<tr>
+<th><strong>Check</strong></th>
+<th><strong>Command</strong></th>
+<th><strong>When</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Backend tests</td>
+<td>make test</td>
+<td>Every phase, once the harness exists. Offline, no API key.</td>
+</tr>
+<tr>
+<td>Lint</td>
+<td>make lint</td>
+<td>Python changes.</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>npm run lint and npm run test -- --run</td>
+<td>Files under frontend/.</td>
+</tr>
+<tr>
+<td>Demo</td>
+<td>make demo then make demo TICKET=CD-1005</td>
+<td>Once the workflow exists. CD-1002 must pause. CD-1005 must escalate by rule.</td>
+</tr>
+<tr>
+<td>Compose</td>
+<td>docker compose config -q</td>
+<td>Delivery phase, when the compose file exists.</td>
+</tr>
+<tr>
+<td>Smoke</td>
+<td>BASE_URL=<a href="http://localhost:8000">http://localhost:8000</a> make smoke</td>
+<td>Against a local stack only, until a real host exists.</td>
+</tr>
+</tbody></table>
+<p>On Windows, put backend on PYTHONPATH with a semicolon and set PYTHONIOENCODING=utf-8. Call Python as .venv\Scripts\python.exe.</p>
+<p><strong>Behavior that must remain true</strong></p>
+<ul>
+<li>A viewer receives 403 on run, reply, and approve.</li>
+<li>CD-1013 does not export customer records and does not change the graph route.</li>
+<li>A refund, deletion, or setting reset does not run without a recorded approval.</li>
+<li>A customer reply does not contain internal URLs, secrets, or another customer's data.</li>
+<li>Memory notes do not contain card numbers, keys, passwords, or raw ticket bodies.</li>
+<li>Ticket categories are introduced only in backend/app/schemas/common.py.</li>
+</ul>
+<h1>9. Quick reference</h1>
+<pre><code>git checkout development
+git pull origin development
+git checkout -b feature/my-task
+# work, commit, push
+gh pr create --base development --head feature/my-task
+# review, squash-merge
+git checkout development
+git pull origin development
+git branch -d feature/my-task
+</code></pre>
+<p>Promotion, release owner only:</p>
+<pre><code>development  --PR--&gt;  testing  --PR--&gt;  main
+</code></pre>
+<p>main is the production candidate. Deploy is a separate, reviewed apply. Nothing is deployed today.</p>
+<h1>10. Questions</h1>
+<ul>
+<li>Branch and release policy: this guide and the repository admin.</li>
+<li>Which sub-task to pick: TASKS.md. Respect the Depends-on line for that phase.</li>
+<li>Spec, layers, and safety rules: CLAUDE.md.</li>
+<li>Diagrams: docs/ARCHITECTURE.md.</li>
+</ul>
+<p>If the shape of a change is unclear, open a draft pull request into development early.</p>
+<p><em>End of document</em></p>
+
+<div id="diagram-modal" class="modal"><div id="diagram-window" class="diagram-window"><div class="diagram-window-header" id="diagram-window-header"><span class="diagram-window-title" id="diagram-window-title">Diagram</span><div class="diagram-window-controls"><button type="button" class="win-btn" id="btn-maximize" onclick="toggleMaximizeWindow()" title="Maximize">&#9744;</button><button type="button" class="win-btn" onclick="closeModal()" title="Close">&times;</button></div></div><div class="diagram-window-body"><div class="modal-toolbar"><button type="button" onclick="modalZoomIn()">Zoom in</button><button type="button" onclick="modalZoomOut()">Zoom out</button><button type="button" onclick="resetModalZoom()">Reset</button><span class="zoom-level" id="zoom-level">100%</span><button type="button" onclick="openPiPFromModal()">Picture in picture</button></div><div class="modal-diagram-viewport" id="modal-viewport"><div class="modal-diagram-inner" id="modal-diagram"></div></div><p class="modal-hint">Drag title to move • Drag edges to resize • Maximize for full screen</p></div><div class="resize-handle resize-n" data-dir="n"></div><div class="resize-handle resize-s" data-dir="s"></div><div class="resize-handle resize-e" data-dir="e"></div><div class="resize-handle resize-w" data-dir="w"></div><div class="resize-handle resize-ne" data-dir="ne"></div><div class="resize-handle resize-nw" data-dir="nw"></div><div class="resize-handle resize-se" data-dir="se"></div><div class="resize-handle resize-sw" data-dir="sw"></div></div></div>
+<script type="application/json" id="diagram-export-data">{}</script>
+<script>
+document.addEventListener("DOMContentLoaded",function(){
+var dataEl=document.getElementById("diagram-export-data");
+var diagramData={};
+try{diagramData=JSON.parse(dataEl.textContent||"{}")}catch(err){console.error("Diagram data parse error:",err)}
+document.querySelectorAll(".diagram").forEach(function(div){
+var n=div.dataset.name;if(n&&diagramData[n])div.dataset.svg=diagramData[n];
+});
+var modal=document.getElementById("diagram-modal");
+var win=document.getElementById("diagram-window");
+var winHeader=document.getElementById("diagram-window-header");
+var winTitle=document.getElementById("diagram-window-title");
+var btnMax=document.getElementById("btn-maximize");
+var modalDiagram=document.getElementById("modal-diagram");
+var viewport=document.getElementById("modal-viewport");
+var zoomLevel=document.getElementById("zoom-level");
+if(!modal||!win||!winHeader||!btnMax||!modalDiagram||!viewport||!zoomLevel){
+console.error("Diagram viewer elements missing");return;
+}
+var currentSVG=null,currentName="diagram",scale=1,panX=0,panY=0;
+var panning=false,sx,sy,ox,oy,pipWin=null;
+var MINW=420,MINH=300,winMax=false,winSaved=null,drag=null,resize=null;
+function clamp(l,t,w,h){
+w=Math.max(MINW,Math.min(w,innerWidth));h=Math.max(MINH,Math.min(h,innerHeight));
+l=Math.max(0,Math.min(l,innerWidth-w));t=Math.max(0,Math.min(t,innerHeight-h));
+return{l:l,t:t,w:w,h:h};
+}
+function applyWin(el,r){var c=clamp(r.l,r.t,r.w,r.h);
+el.style.left=c.l+"px";el.style.top=c.t+"px";el.style.width=c.w+"px";el.style.height=c.h+"px";
+el.style.right="auto";el.style.bottom="auto";}
+function winRect(el){var r=el.getBoundingClientRect();
+return{l:r.left,t:r.top,w:r.width,h:r.height};}
+function centerWin(el,w,h){
+w=Math.min(w||960,innerWidth-24);h=Math.min(h||680,innerHeight-24);
+applyWin(el,{l:(innerWidth-w)/2,t:(innerHeight-h)/2,w:w,h:h});}
+function setMax(on){
+winMax=on;
+if(on){winSaved=winRect(win);win.classList.add("maximized");
+btnMax.innerHTML="\u29C9";btnMax.title="Restore down";
+}else{win.classList.remove("maximized");if(winSaved)applyWin(win,winSaved);
+btnMax.innerHTML="\u25A1";btnMax.title="Maximize";}
+}
+window.toggleMaximizeWindow=function(){setMax(!winMax);};
+function getDiagram(el){return el&&el.closest?el.closest(".diagram"):el;}
+function applyZoom(){
+modalDiagram.style.transform="translate("+panX+"px,"+panY+"px) scale("+scale+")";
+zoomLevel.textContent=Math.round(scale*100)+"%";
+}
+function resetZoom(){scale=1;panX=0;panY=0;applyZoom();}
+window.modalZoomIn=function(){scale=Math.min(scale*1.25,5);applyZoom();};
+window.modalZoomOut=function(){scale=Math.max(scale/1.25,0.25);applyZoom();};
+window.resetModalZoom=resetZoom;
+window.zoomDiagram=function(el){
+var c=getDiagram(el);if(!c)return;
+var svg=c.dataset.svg;if(!svg)return;
+currentSVG=svg;currentName=c.dataset.name||"diagram";
+winTitle.textContent=currentName;
+var safeSVG=document.createElement("div");safeSVG.innerHTML=c.dataset.svg;
+var svgEl=safeSVG.querySelector("svg");
+if(svgEl){
+while(modalDiagram.firstChild)modalDiagram.removeChild(modalDiagram.firstChild);
+modalDiagram.appendChild(svgEl.cloneNode(true));
+}else{modalDiagram.innerHTML="<p>No valid SVG found.</p>";}
+resetZoom();
+if(!winMax)centerWin(win);
+modal.classList.add("active");
+};
+window.closeModal=function(){
+modal.classList.remove("active");setMax(false);currentSVG=null;resetZoom();
+};
+window.openPiPFromModal=function(){
+if(currentSVG)openPiP({dataset:{svg:currentSVG,name:currentName}});
+};
+function esc(t){var d=document.createElement("div");d.textContent=t;return d.innerHTML;}
+async function openPiP(el){
+var c=getDiagram(el);if(!c||!c.dataset.svg)return;
+var t=c.dataset.name||"Diagram";
+if(!window.documentPictureInPicture)return;
+try{
+if(pipWin&&!pipWin.closed)pipWin.close();
+pipWin=await documentPictureInPicture.requestWindow({width:960,height:720});
+pipWin.document.body.style.margin="0";
+pipWin.document.body.innerHTML="<style>body{margin:0;padding:12px}svg{max-width:100%;height:auto}</style>"+
+"<h1 style=\"font:600 14px system-ui;margin:0 0 8px\">"+esc(t)+"</h1>";
+var safeDiv=document.createElement("div");safeDiv.innerHTML=c.dataset.svg;
+var svgEl=safeDiv.querySelector("svg");
+if(svgEl)pipWin.document.body.appendChild(svgEl.cloneNode(true));
+pipWin.addEventListener("pagehide",function(){pipWin=null;});
+}catch(e){console.warn("PiP failed",e);}
+}
+document.body.addEventListener("click",function(e){
+var btn=e.target.closest(".diagram-btn");if(!btn)return;
+var c=getDiagram(btn);if(!c)return;
+var a=btn.dataset.action;
+if(a==="zoom")window.zoomDiagram(c);
+else if(a==="pip")openPiP(c);
+else if(a==="svg"&&c.dataset.svg){
+var blob=new Blob([c.dataset.svg],{type:"image/svg+xml"});
+var u=URL.createObjectURL(blob);var aEl=document.createElement("a");
+aEl.href=u;aEl.download=(c.dataset.name||"diagram")+".svg";aEl.click();
+URL.revokeObjectURL(u);
+}
+});
+winHeader.addEventListener("mousedown",function(e){
+if(e.button!==0||e.target.closest(".win-btn"))return;
+if(winMax){setMax(false);return;}
+var r=winRect(win);
+drag={sx:e.clientX,sy:e.clientY,l:r.l,t:r.t,w:r.w,h:r.h};
+e.preventDefault();
+});
+winHeader.addEventListener("dblclick",function(e){
+if(!e.target.closest(".win-btn"))setMax(!winMax);
+});
+win.querySelectorAll(".resize-handle").forEach(function(handle){
+handle.addEventListener("mousedown",function(e){
+if(winMax)return;e.preventDefault();e.stopPropagation();
+var r=winRect(win);
+resize={dir:handle.dataset.dir,sx:e.clientX,sy:e.clientY,l:r.l,t:r.t,w:r.w,h:r.h};
+});
+});
+window.addEventListener("mousemove",function(e){
+if(drag&&!winMax){
+applyWin(win,{l:drag.l+(e.clientX-drag.sx),t:drag.t+(e.clientY-drag.sy),w:drag.w,h:drag.h});
+}
+if(resize&&!winMax){
+var dx=e.clientX-resize.sx,dy=e.clientY-resize.sy,dir=resize.dir;
+var l=resize.l,t=resize.t,w=resize.w,h=resize.h;
+if(dir.indexOf("e")>=0)w=Math.max(MINW,resize.w+dx);
+if(dir.indexOf("w")>=0){w=Math.max(MINW,resize.w-dx);l=resize.l+resize.w-w;}
+if(dir.indexOf("s")>=0)h=Math.max(MINH,resize.h+dy);
+if(dir.indexOf("n")>=0){h=Math.max(MINH,resize.h-dy);t=resize.t+resize.h-h;}
+applyWin(win,{l:l,t:t,w:w,h:h});
+}
+if(panning){panX=ox+(e.clientX-sx);panY=oy+(e.clientY-sy);applyZoom();}
+});
+window.addEventListener("mouseup",function(){
+drag=null;resize=null;panning=false;viewport.classList.remove("panning");
+});
+viewport.addEventListener("wheel",function(e){
+if(!modal.classList.contains("active"))return;
+e.preventDefault();
+scale=Math.min(Math.max(scale*(e.deltaY>0?0.9:1.1),0.25),5);
+applyZoom();
+},{passive:false});
+viewport.addEventListener("mousedown",function(e){
+if(e.button!==0)return;panning=true;
+sx=e.clientX;sy=e.clientY;ox=panX;oy=panY;
+viewport.classList.add("panning");
+});
+modal.addEventListener("click",function(e){if(e.target===modal)window.closeModal();});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")window.closeModal();});
+document.querySelectorAll(".diagram svg").forEach(function(svg){
+svg.style.cursor="zoom-in";
+svg.addEventListener("click",function(e){
+if(e.target.closest(".diagram-controls"))return;
+var d=svg.closest(".diagram");if(d)window.zoomDiagram(d);
+});
+});
+centerWin(win);
+});
+</script>
+</body>
+</html>

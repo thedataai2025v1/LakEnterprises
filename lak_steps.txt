@@ -1,3 +1,6 @@
+
+https://github.com/anulsasidharan/CloudDesk/blob/main/TASKS.md
+
 for this project, we will be geting prd.md,hdd.md, llld.md
 then you can proceed for next development of the project
 Step 1:
@@ -22,6 +25,31 @@ Step 3:
  commit and push
 
 
+Step 4:
+ create project folder structure by using prompt '04-.claude_folder_str_and_PromptCaching.md'
+
+Step 5:
+ -- create tasks.md file, prompt below
+ Create a TASKS.md file, it should contain the development plan in phases. Create the phases in such a way that the dependency issue should be minimized. Each phase must have sub tasks. each subtasks should belong to a feature-github repo in a format "feature/repo-name". Create the phases and sub-tasks in fhe following structure. I and giving you from another project example, refer this and create TASKS.md file like this.
+ttach a sample TASKS.md file here.
+
+status should be Pending ❌ or Completed ✅
+
+Step 6:
+ create gitworkflow doc
+ prompt: 'create a github workflow for this project. refer to the attached sample file "Git_GitHub_Workflow_Guide".'
+
+Step 7:
+ -- update .gitignore file
+ prompt:  update .gitignore file accordingly and commit and push to github
+
+Step 8:
+ commit and push to github
+
+Step 9:
+ development of the project
+ use prompt to start by phase by phase or task by task
+ 'samples\project_development_Prompts.txt'
 
 
 

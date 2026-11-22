@@ -8,3 +8,25 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Claude Code
+/.claude/*
+!/.claude/settings.json
+!/.claude/agents/
+!/.claude/skills/
+!/.claude/rules/
+!/.claude/hooks/
+.claude/settings.local.json
+.claude/transcripts/
+
+# Claude Code backups
+.claude.bak-*/
+
+# Added by Euron Code
+.euron/cache/
+.euron/knowledge/
+.euron/security/
+.euron/settings.local.json
+.env
+.env.*
+!.env.example
