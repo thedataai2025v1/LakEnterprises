@@ -19,10 +19,10 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P1-1 · Settings and JSON logging | `feature/backend-config-logging` | Completed ✅ |
-| P1-2 · Health routes and request-id middleware | `feature/backend-health-request-id` | Completed ✅ |
-| P1-3 · Offline pytest harness | `feature/test-harness-offline` | Completed ✅ |
-| P1-4 · Makefile and `.env.example` | `feature/makefile-env-example` | Completed ✅ |
+| P1-1 · Settings and JSON logging | `feature/backend-config-logging` | Pending ❌ |
+| P1-2 · Health routes and request-id middleware | `feature/backend-health-request-id` | Pending ❌ |
+| P1-3 · Offline pytest harness | `feature/test-harness-offline` | Pending ❌ |
+| P1-4 · Makefile and `.env.example` | `feature/makefile-env-example` | Pending ❌ |
 
 ---
 
@@ -33,10 +33,10 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P2-1 · SQLAlchemy entities and category enum | `feature/sqlalchemy-entities` | Completed ✅ |
-| P2-2 · Postgres schema, RLS, and migrations | `feature/postgres-schema-rls` | Completed ✅ |
-| P2-3 · Repository layer | `feature/repository-layer` | Completed ✅ |
-| P2-4 · Sample data and demo bootstrap | `feature/sample-data-bootstrap` | Completed ✅ |
+| P2-1 · SQLAlchemy entities and category enum | `feature/sqlalchemy-entities` | Pending ❌ |
+| P2-2 · Postgres schema, RLS, and migrations | `feature/postgres-schema-rls` | Pending ❌ |
+| P2-3 · Repository layer | `feature/repository-layer` | Pending ❌ |
+| P2-4 · Sample data and demo bootstrap | `feature/sample-data-bootstrap` | Pending ❌ |
 
 ---
 
