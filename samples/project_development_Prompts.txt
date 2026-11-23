@@ -24,12 +24,12 @@ Once the plan is ready, go through it and implement it
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 Basic Prompt for each tasks:
 -----------------------------
-You have access to all the files in my project root directory. I am following the TASKS.md file for structured development.  Go ahead and complete the Phase 1 — Runtime skeleton· 
+You have access to all the files in my project root directory. I am following the TASKS.md file for structured development.  Go ahead and complete the Phase 1 — Runtime skeleton by creating the feature branch for this phase.
  Once completed do the following tasks:
 1. Make sure to update the .gitignore file at the end of each Task if required. 
 2. At the end give me the short description what I have to write in the "Add a description" box in the github pull request.
 3. it should have proper unit, integration testcases where applicable along with E2E where required.
-
+4. it should also have proper code quality withblack, isort, flake8, bandit,safety check --full-report,  pip-audit km report
 ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 AFTER EACH PHASE, GET AN EXPLAINABLE DOCUMENT ABOUT WHAT HAD DONE IN THAT PHASE IN A LEMAN LANGUAGE. 
