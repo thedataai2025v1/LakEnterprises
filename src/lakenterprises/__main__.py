@@ -872,6 +872,11 @@ def _cmd_workflow(args: argparse.Namespace, settings: Settings) -> None:
                 print(f"    Payload: {json.dumps(ev.payload)}")
         print()
 
+    elif action == "demo":
+        from scripts.demo_e2e_process import run_e2e_process_demo
+
+        run_e2e_process_demo()
+
 
 # ---------------------------------------------------------------------------
 # Argument parser
@@ -1183,10 +1188,10 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     workflow_parser.add_argument(
         "workflow_action",
-        choices=["run", "trace"],
+        choices=["run", "trace", "demo"],
         default="run",
         nargs="?",
-        help="Workflow action ('run' or 'trace').",
+        help="Workflow action ('run', 'trace', or 'demo').",
     )
     workflow_parser.add_argument(
         "--id",

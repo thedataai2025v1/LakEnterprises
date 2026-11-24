@@ -5,8 +5,7 @@ import pytest
 from lakenterprises.__main__ import main
 from lakenterprises.db import get_db_session, reset_db
 from lakenterprises.models.entities import Role, User
-from lakenterprises.models.enums import (ApprovalStatus, ProcessStatus,
-                                         TaskStatus)
+from lakenterprises.models.enums import ApprovalStatus, ProcessStatus, TaskStatus
 from lakenterprises.services.approval import ApprovalService
 from lakenterprises.services.process import ProcessService
 

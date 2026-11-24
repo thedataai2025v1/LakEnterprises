@@ -40,6 +40,14 @@ class WorkflowState(TypedDict, total=False):
     human_intervention_required: bool
     approval_request_id: Optional[str]
     approval_status: Optional[str]  # pending, approved, rejected
+    approval_decision: Optional[Dict[str, Any]]
+    escalation_tier: Optional[str]
+    target_role: Optional[str]
+    sla_hours: Optional[float]
+    sla_deadline: Optional[str]
+    sla_breached: Optional[bool]
+    resolution_execution: Optional[Dict[str, Any]]
+    action_results: Optional[Dict[str, Any]]
     confidence_score: float
     iteration_count: int
     routing_history: List[str]
@@ -87,6 +95,14 @@ def create_initial_workflow_state(
         "human_intervention_required": False,
         "approval_request_id": None,
         "approval_status": None,
+        "approval_decision": None,
+        "escalation_tier": None,
+        "target_role": None,
+        "sla_hours": None,
+        "sla_deadline": None,
+        "sla_breached": False,
+        "resolution_execution": None,
+        "action_results": None,
         "confidence_score": 1.0,
         "iteration_count": 0,
         "routing_history": [],
