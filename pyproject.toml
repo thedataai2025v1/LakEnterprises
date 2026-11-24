@@ -41,3 +41,8 @@ dev = [
 [tool.bandit]
 exclude_dirs = [".venv", "tests"]
 skips = ["B104", "B105", "B106", "B110"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
