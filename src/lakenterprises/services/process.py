@@ -61,7 +61,11 @@ VALID_TASK_TRANSITIONS: dict[str, set[str]] = {
 class ProcessService:
     """Service encapsulating business logic for enterprise processes."""
 
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Optional[Session] = None) -> None:
+        if db is None:
+            from lakenterprises.db import get_db_session
+
+            db = get_db_session()
         self.db = db
         self.template_repo = ProcessTemplateRepository(db)
         self.instance_repo = ProcessInstanceRepository(db)
