@@ -11,10 +11,9 @@ from __future__ import annotations
 
 import os
 import warnings
-from typing import Type
 
-from langchain_core.language_models import BaseChatModel
 from langchain_core.embeddings import Embeddings
+from langchain_core.language_models import BaseChatModel
 
 # ---------------------------------------------------------------------------
 # Provider → environment-variable mapping
@@ -49,6 +48,7 @@ SUPPORTED_PROVIDERS: list[str] = list(_PROVIDER_KEYS.keys())
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _validate_provider(provider: str) -> None:
     """Raise ``ValueError`` for an unsupported provider name."""
     if provider not in _PROVIDER_KEYS:
@@ -78,6 +78,7 @@ def _check_api_key(provider: str) -> str | None:
 # ---------------------------------------------------------------------------
 # Chat-model factory
 # ---------------------------------------------------------------------------
+
 
 def get_llm(
     provider: str,
@@ -147,6 +148,7 @@ def get_llm(
 
 # -- provider-specific builders ------------------------------------------------
 
+
 def _make_openai(model: str, temperature: float, **kwargs: object) -> BaseChatModel:
     from langchain_openai import ChatOpenAI
 
@@ -196,7 +198,9 @@ def _make_azure(model: str, temperature: float, **kwargs: object) -> BaseChatMod
 def _make_ollama(model: str, temperature: float, **kwargs: object) -> BaseChatModel:
     from langchain_ollama import ChatOllama
 
-    base_url = kwargs.pop("base_url", None) or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+    base_url = kwargs.pop("base_url", None) or os.environ.get(
+        "OLLAMA_BASE_URL", "http://localhost:11434"
+    )
     return ChatOllama(
         model=model, temperature=temperature, base_url=base_url, **kwargs  # type: ignore[arg-type]
     )
@@ -230,9 +234,7 @@ def _make_watson(model: str, temperature: float, **kwargs: object) -> BaseChatMo
         )
     project_id = os.environ.get("WATSONX_PROJECT_ID")
     if not project_id:
-        raise ImportError(
-            "Environment variable WATSONX_PROJECT_ID is not set."
-        )
+        raise ImportError("Environment variable WATSONX_PROJECT_ID is not set.")
     return ChatWatsonx(
         model_id=model,
         temperature=temperature,
@@ -245,6 +247,7 @@ def _make_watson(model: str, temperature: float, **kwargs: object) -> BaseChatMo
 # ---------------------------------------------------------------------------
 # Embeddings factory
 # ---------------------------------------------------------------------------
+
 
 def get_embedding_model(
     provider: str,
@@ -312,6 +315,7 @@ def get_embedding_model(
 
 # -- provider-specific embedding builders --------------------------------------
 
+
 def _make_openai_embeddings(model: str, **kwargs: object) -> Embeddings:
     from langchain_openai import OpenAIEmbeddings
 
@@ -364,7 +368,9 @@ def _make_azure_embeddings(model: str, **kwargs: object) -> Embeddings:
 def _make_ollama_embeddings(model: str, **kwargs: object) -> Embeddings:
     from langchain_ollama import OllamaEmbeddings
 
-    base_url = kwargs.pop("base_url", None) or os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+    base_url = kwargs.pop("base_url", None) or os.environ.get(
+        "OLLAMA_BASE_URL", "http://localhost:11434"
+    )
     return OllamaEmbeddings(
         model=model, base_url=base_url, **kwargs  # type: ignore[arg-type]
     )

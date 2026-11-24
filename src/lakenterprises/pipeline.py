@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 # State
 # ---------------------------------------------------------------------------
 
+
 class AgentState(TypedDict):
     """Complete state carried through every node of the research pipeline."""
 
@@ -41,6 +42,7 @@ class AgentState(TypedDict):
 # Response
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Response:
     """Return value of a completed pipeline run."""
@@ -54,6 +56,7 @@ class Response:
 # ---------------------------------------------------------------------------
 # Node functions
 # ---------------------------------------------------------------------------
+
 
 def _safe_node(func: Any, name: str):
     """Wrap a node function so exceptions are caught and stored in state."""
@@ -72,6 +75,7 @@ def _safe_node(func: Any, name: str):
 
 
 # -- Node 1: analyze -------------------------------------------------------
+
 
 def analyze_node(state: AgentState) -> AgentState:
     """Analyze the user query.
@@ -105,8 +109,16 @@ def analyze_node(state: AgentState) -> AgentState:
 
     # Sensitive-topic detection (placeholder keyword list)
     sensitive_keywords = {
-        "salary", "income", "salary", "earnings", "ssn", "social security",
-        "credit card", "password", "medical", "health record",
+        "salary",
+        "income",
+        "salary",
+        "earnings",
+        "ssn",
+        "social security",
+        "credit card",
+        "password",
+        "medical",
+        "health record",
     }
     sensitive_topics: list[str] = [
         kw for kw in sensitive_keywords if kw in query.lower()
@@ -123,6 +135,7 @@ def analyze_node(state: AgentState) -> AgentState:
 
 # -- Node 2: decompose -----------------------------------------------------
 
+
 def decompose_node(state: AgentState) -> AgentState:
     """Break the query into sub-questions and assign a retrieval strategy.
 
@@ -136,7 +149,11 @@ def decompose_node(state: AgentState) -> AgentState:
     # Decide default strategy from keyword heuristics
     sql_keywords = {"count", "total", "average", "sum", "list all", "how many"}
     graph_keywords = {
-        "related", "connected", "relationship", "network", "link",
+        "related",
+        "connected",
+        "relationship",
+        "network",
+        "link",
     }
 
     query_lower = query.lower()
@@ -179,6 +196,7 @@ def decompose_node(state: AgentState) -> AgentState:
 
 # -- Node 3: retrieve ------------------------------------------------------
 
+
 def retrieve_node(state: AgentState) -> AgentState:
     """Call the appropriate retriever for each sub-question.
 
@@ -190,12 +208,14 @@ def retrieve_node(state: AgentState) -> AgentState:
 
     # If decompose was skipped (simple query), create a default sub-question
     if not sub_questions:
-        sub_questions = [{
-            "question": state["query"],
-            "strategy": "vector",
-            "evidence": [],
-            "verified": False,
-        }]
+        sub_questions = [
+            {
+                "question": state["query"],
+                "strategy": "vector",
+                "evidence": [],
+                "verified": False,
+            }
+        ]
 
     for sq in sub_questions:
         # Placeholder retriever – real implementations go here
@@ -213,6 +233,7 @@ def retrieve_node(state: AgentState) -> AgentState:
 
 
 # -- Node 4: verify --------------------------------------------------------
+
 
 def verify_node(state: AgentState) -> AgentState:
     """Cross-check evidence and mark each piece as verified/unverified/contradictory.
@@ -245,6 +266,7 @@ def verify_node(state: AgentState) -> AgentState:
 
 # -- Node 5: synthesize ----------------------------------------------------
 
+
 def synthesize_node(state: AgentState) -> AgentState:
     """Merge all verified evidence across sub-questions and remove duplicates."""
     state = dict(state)
@@ -266,6 +288,7 @@ def synthesize_node(state: AgentState) -> AgentState:
 
 # -- Node 6: answer --------------------------------------------------------
 
+
 def answer_node(state: AgentState) -> AgentState:
     """Generate the final answer with citations.
 
@@ -276,9 +299,7 @@ def answer_node(state: AgentState) -> AgentState:
     query = state.get("query", "")
 
     if state.get("error"):
-        state["answer"] = (
-            f"An error occurred during research: {state['error']}"
-        )
+        state["answer"] = f"An error occurred during research: {state['error']}"
         state["citations"] = []
         return state
 
@@ -290,14 +311,17 @@ def answer_node(state: AgentState) -> AgentState:
         parts.append(ev["text"])
         citations.append(f"[{ev.get('source', 'unknown')} - evidence #{i + 1}]")
 
-    state["answer"] = f"Research results for '{query}':\n\n" + "\n".join(parts) if parts else (
-        f"No evidence found for '{query}'."
+    state["answer"] = (
+        f"Research results for '{query}':\n\n" + "\n".join(parts)
+        if parts
+        else (f"No evidence found for '{query}'.")
     )
     state["citations"] = citations
     return state
 
 
 # -- Node 7: log -----------------------------------------------------------
+
 
 def log_node(state: AgentState) -> AgentState:
     """Log the complete run with all metadata.
@@ -310,11 +334,13 @@ def log_node(state: AgentState) -> AgentState:
 
     run_id = str(uuid.uuid4())
 
-    strategies_used = list({
-        sq.get("strategy", "unknown")
-        for sq in state.get("sub_questions", [])
-        if sq.get("strategy")
-    })
+    strategies_used = list(
+        {
+            sq.get("strategy", "unknown")
+            for sq in state.get("sub_questions", [])
+            if sq.get("strategy")
+        }
+    )
 
     state["metadata"] = {
         "run_id": run_id,
@@ -326,12 +352,16 @@ def log_node(state: AgentState) -> AgentState:
         "num_evidence": len(state.get("evidence", [])),
         "error": state.get("error"),
     }
-    logger.info("Research run %s completed. %d evidence items.", run_id,
-                len(state.get("evidence", [])))
+    logger.info(
+        "Research run %s completed. %d evidence items.",
+        run_id,
+        len(state.get("evidence", [])),
+    )
     return state
 
 
 # -- Node 8: finalize ------------------------------------------------------
+
 
 def finalize_node(state: AgentState) -> AgentState:
     """Wrap the final Response object and end the graph."""
@@ -342,6 +372,7 @@ def finalize_node(state: AgentState) -> AgentState:
 # ---------------------------------------------------------------------------
 # Conditional routing
 # ---------------------------------------------------------------------------
+
 
 def _route_after_analyze(state: AgentState) -> str:
     """Skip decompose for simple queries; always decompose for others."""
@@ -354,6 +385,7 @@ def _route_after_analyze(state: AgentState) -> str:
 # ---------------------------------------------------------------------------
 # Graph construction
 # ---------------------------------------------------------------------------
+
 
 def create_research_pipeline(llm: BaseLanguageModel | None = None) -> Any:
     """Build and return the compiled LangGraph StateGraph.

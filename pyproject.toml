@@ -8,11 +8,17 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "alembic>=1.20.1",
+    "bcrypt>=5.0.0",
+    "fakeredis>=2.41.0",
+    "fastapi>=0.165.0",
     "langchain>=1.5.2",
     "langgraph>=1.2.24",
     "openai>=3.57.0",
-    "sqlalchemy>=2.1.9",
+    "passlib>=1.9.5",
+    "pyjwt>=2.15.1",
+    "python-jose[cryptography]>=3.5.0",
+    "redis>=8.2.0",
+    "uvicorn>=0.54.0",
 ]
 
 [project.scripts]
@@ -24,6 +30,14 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "pytest>=9.2.0",
-    "pytest-cov>=7.1.0",
+    "bandit>=1.9.4",
+    "black>=26.10.1",
+    "flake8>=7.5.0",
+    "isort>=9.0.2",
+    "pip-audit>=2.10.1",
+    "safety>=3.8.1",
 ]
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests"]
+skips = ["B104", "B105", "B106", "B110"]

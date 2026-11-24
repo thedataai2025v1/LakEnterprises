@@ -46,11 +46,14 @@ _PROVIDER_EMBEDDING_DEFAULTS: dict[str, str] = {
 }
 
 # Providers that need an API key
-_CLOUD_PROVIDERS = frozenset({"openai", "anthropic", "google", "azure", "groq", "cohere", "watsonx"})
+_CLOUD_PROVIDERS = frozenset(
+    {"openai", "anthropic", "google", "azure", "groq", "cohere", "watsonx"}
+)
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _env(key: str, default: str = "") -> str:
     """Return the environment variable *key*, falling back to *default*."""
@@ -72,6 +75,7 @@ def _env_int(key: str, default: int = 0) -> int:
 # ---------------------------------------------------------------------------
 # Settings class
 # ---------------------------------------------------------------------------
+
 
 class Settings:
     """Lazy, typed configuration for the LakEnterprises knowledge platform.
@@ -327,7 +331,9 @@ class Settings:
             errors.append("GRAPH_PASSWORD is required when GRAPH_STORE=neo4j")
 
         if errors:
-            raise ValueError("Configuration errors:\n" + "\n".join(f"  - {e}" for e in errors))
+            raise ValueError(
+                "Configuration errors:\n" + "\n".join(f"  - {e}" for e in errors)
+            )
 
     # ── Representation ────────────────────────────────────────────────────
     def __str__(self) -> str:
