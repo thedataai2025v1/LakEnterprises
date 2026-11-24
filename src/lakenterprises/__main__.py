@@ -579,8 +579,11 @@ def _cmd_guardrails(args: argparse.Namespace, settings: Settings) -> None:
     """Inspect and run guardrails security operations."""
     import json
 
-    from .guardrails import (default_injection_guard, default_rules_engine,
-                             default_scrubber)
+    from .guardrails import (
+        default_injection_guard,
+        default_rules_engine,
+        default_scrubber,
+    )
 
     action = args.action
 
@@ -776,7 +779,9 @@ def _cmd_agents(args: argparse.Namespace, settings: Settings) -> None:
             if not eval_res["passed"]:
                 for f in eval_res.get("failures", []):
                     print(f"       - {f}")
-        print(f"\nBenchmark Result: {passed_count}/{len(BENCHMARK_SCENARIOS)} passed.\n")
+        print(
+            f"\nBenchmark Result: {passed_count}/{len(BENCHMARK_SCENARIOS)} passed.\n"
+        )
 
     elif action == "run":
         role_str = getattr(args, "role", "supervisor") or "supervisor"
@@ -804,6 +809,67 @@ def _cmd_agents(args: argparse.Namespace, settings: Settings) -> None:
         print(f"Status:     {res.status.value}")
         print(f"Confidence: {res.confidence_score}")
         print(f"Output:     {json.dumps(res.output_data, indent=2)}")
+        print()
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: workflow (Phase 10)
+# ---------------------------------------------------------------------------
+
+
+def _cmd_workflow(args: argparse.Namespace, settings: Settings) -> None:
+    """Execute enterprise workflow graph or inspect tracing events."""
+    import json
+    import uuid
+
+    from lakenterprises.workflow import WorkflowEngine, global_tracer
+
+    action = getattr(args, "workflow_action", "run")
+    process_id = getattr(args, "process_id", None) or f"proc-{uuid.uuid4().hex[:8]}"
+
+    if action == "run":
+        engine = WorkflowEngine()
+        title = getattr(args, "title", "Enterprise Investigation Workflow")
+        instruction = getattr(args, "instruction", "Standard enterprise process")
+        amount = getattr(args, "amount", 5000.0)
+
+        print(f"\nExecuting Enterprise Workflow Graph [Process: {process_id}]")
+        print("=" * 65)
+        print(f"Title:       {title}")
+        print(f"Instruction: {instruction}")
+        print(f"Amount:      ${amount:,.2f}")
+        print("-" * 65)
+
+        state = engine.run(
+            process_id=process_id,
+            title=title,
+            instruction=instruction,
+            initial_context={"amount": amount},
+        )
+
+        print("Workflow Execution Completed:")
+        print(f"Status:             {state.get('current_status')}")
+        print(f"Active Node:        {state.get('active_node')}")
+        print(f"Human Intervention: {state.get('human_intervention_required')}")
+        print(f"Confidence Score:   {state.get('confidence_score')}")
+        print(f"Final Outcome:      {state.get('final_outcome')}")
+        print(f"Execution Path:     {' -> '.join(state.get('routing_history', []))}")
+        events = global_tracer.get_events(process_id)
+        print(f"Traced Events:      {len(events)} events recorded.")
+        print()
+
+    elif action == "trace":
+        events = global_tracer.get_events(process_id)
+        print(f"\nTrace Events for Process [{process_id}] ({len(events)} events):")
+        print("=" * 65)
+        for ev in events:
+            event_type_name = str(getattr(ev.event_type, "value", ev.event_type))
+            print(
+                f"[{ev.timestamp[:19]}] {event_type_name:18} | "
+                f"Node: {ev.node_name or 'N/A':18} | Step: {ev.step_number}"
+            )
+            if ev.payload:
+                print(f"    Payload: {json.dumps(ev.payload)}")
         print()
 
 
@@ -1109,6 +1175,42 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Transaction amount parameter for compliance check.",
     )
 
+    # ── workflow ───────────────────────────────────────────────────────
+    workflow_parser = subparsers.add_parser(
+        "workflow",
+        help="Execute and inspect Phase 10 enterprise workflow graph",
+        description="Run enterprise workflow graph with checkpointer and tracing.",
+    )
+    workflow_parser.add_argument(
+        "workflow_action",
+        choices=["run", "trace"],
+        default="run",
+        nargs="?",
+        help="Workflow action ('run' or 'trace').",
+    )
+    workflow_parser.add_argument(
+        "--id",
+        dest="process_id",
+        default=None,
+        help="Process ID to run or inspect.",
+    )
+    workflow_parser.add_argument(
+        "--title",
+        default="Enterprise Investigation Workflow",
+        help="Title or description of the workflow execution.",
+    )
+    workflow_parser.add_argument(
+        "--instruction",
+        default="Investigate invoice dispute and verify compliance policies",
+        help="Primary instruction prompt for the workflow.",
+    )
+    workflow_parser.add_argument(
+        "--amount",
+        type=float,
+        default=5000.0,
+        help="Transaction amount context for workflow execution.",
+    )
+
     return parser
 
 
@@ -1168,6 +1270,9 @@ def main(argv: list[str] | None = None) -> None:
 
     elif command == "agent":
         _cmd_agents(args, settings)
+
+    elif command == "workflow":
+        _cmd_workflow(args, settings)
 
     else:
         parser.print_help()

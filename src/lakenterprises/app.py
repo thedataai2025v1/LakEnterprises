@@ -19,8 +19,7 @@ from fastapi.responses import JSONResponse
 
 from lakenterprises.auth.audit_middleware import AuditMiddleware
 from lakenterprises.auth.middleware import get_current_user, require_role
-from lakenterprises.auth.rate_limit import (RateLimitMiddleware,
-                                            get_rate_limiter)
+from lakenterprises.auth.rate_limit import RateLimitMiddleware, get_rate_limiter
 from lakenterprises.auth.routes import router as auth_router
 from lakenterprises.document.routes import router as document_router
 from lakenterprises.guardrails.middleware import PIIScrubberMiddleware
@@ -30,6 +29,7 @@ from lakenterprises.process.routes import approvals_router
 from lakenterprises.process.routes import router as process_router
 from lakenterprises.services.audit import AuditService
 from lakenterprises.tools.routes import router as tools_router
+from lakenterprises.workflow.routes import router as workflow_router
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +115,7 @@ def create_app(
     app.include_router(tools_router)
     app.include_router(guardrails_router)
     app.include_router(memory_router)
+    app.include_router(workflow_router)
 
     # ── Sample Protected Routes for RBAC Testing & Verification ──────
     @app.get(

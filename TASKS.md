@@ -148,12 +148,12 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P10-1 · Process state and checkpointer | `feature/graph-state-checkpointer` | Pending ❌ |
-| P10-2 · Orchestrator graph nodes | `feature/graph-nodes-orchestrator` | Pending ❌ |
-| P10-3 · Document investigation graph nodes | `feature/graph-nodes-investigate` | Pending ❌ |
-| P10-4 · Resolution and risk graph nodes | `feature/graph-nodes-resolution` | Pending ❌ |
-| P10-5 · Graph wiring and run endpoint | `feature/graph-wiring-run-api` | Pending ❌ |
-| P10-6 · Workflow tracer and events stream | `feature/workflow-tracer-events` | Pending ❌ |
+| P10-1 · Process state and checkpointer | `feature/graph-state-checkpointer` | Completed ✅ |
+| P10-2 · Orchestrator graph nodes | `feature/graph-nodes-orchestrator` | Completed ✅ |
+| P10-3 · Document investigation graph nodes | `feature/graph-nodes-investigate` | Completed ✅ |
+| P10-4 · Resolution and risk graph nodes | `feature/graph-nodes-resolution` | Completed ✅ |
+| P10-5 · Graph wiring and run endpoint | `feature/graph-wiring-run-api` | Completed ✅ |
+| P10-6 · Workflow tracer and events stream | `feature/workflow-tracer-events` | Completed ✅ |
 
 ---
 
