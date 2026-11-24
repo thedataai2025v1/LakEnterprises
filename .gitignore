@@ -40,3 +40,9 @@ htmlcov/
 # Local databases and logs
 data/
 *.log
+
+# Frontend build & dependencies
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+

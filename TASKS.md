@@ -179,10 +179,10 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P12-1 · Next.js app shell and navigation | `feature/frontend-app-shell` | Pending ❌ |
-| P12-2 · Typed API client (auto-generated) | `feature/frontend-api-client` | Pending ❌ |
-| P12-3 · Login, RBAC layout, and session | `feature/frontend-auth-layout` | Pending ❌ |
-| P12-4 · Dashboard and list pages | `feature/frontend-dashboard-pages` | Pending ❌ |
+| P12-1 · Next.js app shell and navigation | `feature/frontend-app-shell` | Completed ✅ |
+| P12-2 · Typed API client (auto-generated) | `feature/frontend-api-client` | Completed ✅ |
+| P12-3 · Login, RBAC layout, and session | `feature/frontend-auth-layout` | Completed ✅ |
+| P12-4 · Dashboard and list pages | `feature/frontend-dashboard-pages` | Completed ✅ |
 
 ---
 

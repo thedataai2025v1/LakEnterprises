@@ -739,6 +739,8 @@ def _cmd_memory(args: argparse.Namespace, settings: Settings) -> None:
 
 def _cmd_agents(args: argparse.Namespace, settings: Settings) -> None:
     """Handle the 'agent' command group."""
+    import json
+
     from lakenterprises.agents import (
         BENCHMARK_SCENARIOS,
         AgentRole,
@@ -876,6 +878,22 @@ def _cmd_workflow(args: argparse.Namespace, settings: Settings) -> None:
         from scripts.demo_e2e_process import run_e2e_process_demo
 
         run_e2e_process_demo()
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: ui (Phase 12 Console UI shell)
+# ---------------------------------------------------------------------------
+
+
+def _cmd_ui(args: argparse.Namespace, settings: Settings) -> None:
+    """Launch Next.js console UI shell."""
+    from .ui import run_frontend_server
+
+    port = getattr(args, "port", 3001)
+    dev = not getattr(args, "prod", False)
+    exit_code = run_frontend_server(port=port, dev=dev)
+    if exit_code != 0:
+        sys.exit(exit_code)
 
 
 # ---------------------------------------------------------------------------
@@ -1216,6 +1234,25 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Transaction amount context for workflow execution.",
     )
 
+    # ── ui (Phase 12 Console UI shell) ─────────────────────────────────
+    ui_parser = subparsers.add_parser(
+        "ui",
+        help="Start Next.js Console UI shell (Phase 12)",
+        description="Launch the Next.js frontend console UI shell on port 3001.",
+    )
+    ui_parser.add_argument(
+        "--port",
+        type=int,
+        default=3001,
+        help="Port to run the console UI shell on (default: 3001).",
+    )
+    ui_parser.add_argument(
+        "--prod",
+        action="store_true",
+        default=False,
+        help="Run in production mode instead of dev mode.",
+    )
+
     return parser
 
 
@@ -1278,6 +1315,9 @@ def main(argv: list[str] | None = None) -> None:
 
     elif command == "workflow":
         _cmd_workflow(args, settings)
+
+    elif command == "ui":
+        _cmd_ui(args, settings)
 
     else:
         parser.print_help()

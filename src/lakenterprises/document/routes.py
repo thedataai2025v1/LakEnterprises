@@ -113,7 +113,7 @@ def get_document_service() -> DocumentService:
     response_model=DocumentResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Ingest and chunk a document",
-    dependencies=[Depends(require_role("analyst"))],
+    dependencies=[Depends(require_role("analyst", "admin"))],
 )
 def ingest_document(
     body: DocumentIngestRequest,
@@ -163,7 +163,7 @@ def ingest_document(
     "",
     response_model=list[DocumentListItem],
     summary="List all ingested documents",
-    dependencies=[Depends(require_role("viewer"))],
+    dependencies=[Depends(require_role("viewer", "analyst", "admin"))],
 )
 def list_documents(
     limit: int = Query(50, ge=1, le=200),
@@ -189,7 +189,7 @@ def list_documents(
     "/{document_id}",
     response_model=DocumentResponse,
     summary="Get document details and chunks",
-    dependencies=[Depends(require_role("viewer"))],
+    dependencies=[Depends(require_role("viewer", "analyst", "admin"))],
 )
 def get_document(
     document_id: str,
@@ -254,7 +254,7 @@ def delete_document(
     "/search",
     response_model=DocumentSearchResponse,
     summary="Search documents using hybrid retrieval",
-    dependencies=[Depends(require_role("viewer"))],
+    dependencies=[Depends(require_role("viewer", "analyst", "admin"))],
 )
 def search_documents(
     body: DocumentSearchRequest,
