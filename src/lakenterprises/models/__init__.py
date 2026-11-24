@@ -2,11 +2,12 @@
 
 from .base import Base, TimestampMixin, UUIDMixin  # noqa: F401
 from .entities import Document  # noqa: F401
-from .entities import (AuditLog, AuthToken, DocumentChunk, Permission,
-                       ResearchSession, ResearchSubQuestion, Role, User,
-                       WorkflowEvent)
-from .enums import (AuditAction, AuditSeverity, PermissionType,  # noqa: F401
-                    RoleType)
+from .entities import (ApprovalRequest, AuditLog, AuthToken, DocumentChunk,
+                       Permission, ProcessInstance, ProcessTask,
+                       ProcessTemplate, ResearchSession, ResearchSubQuestion,
+                       Role, User, WorkflowEvent)
+from .enums import (ApprovalStatus, AuditAction, AuditSeverity,  # noqa: F401
+                    PermissionType, ProcessStatus, RoleType, TaskStatus)
 
 __all__ = [
     # Bases
@@ -14,16 +15,23 @@ __all__ = [
     "TimestampMixin",
     "UUIDMixin",
     # Enums
+    "ApprovalStatus",
     "AuditAction",
     "AuditSeverity",
     "PermissionType",
+    "ProcessStatus",
     "RoleType",
+    "TaskStatus",
     # Entities
+    "ApprovalRequest",
     "AuditLog",
     "AuthToken",
     "Document",
     "DocumentChunk",
     "Permission",
+    "ProcessInstance",
+    "ProcessTask",
+    "ProcessTemplate",
     "ResearchSession",
     "ResearchSubQuestion",
     "Role",

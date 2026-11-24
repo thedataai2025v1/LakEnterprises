@@ -75,10 +75,10 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P5-1 · Process template CRUD | `feature/process-template-crud` | Pending ❌ |
-| P5-2 · Process instance API and state machine | `feature/process-instance-state` | Pending ❌ |
-| P5-3 · Task and approval API | `feature/task-approval-api` | Pending ❌ |
-| P5-4 · Process run CLI and demo script | `feature/process-run-demo` | Pending ❌ |
+| P5-1 · Process template CRUD | `feature/process-template-crud` | Completed ✅ |
+| P5-2 · Process instance API and state machine | `feature/process-instance-state` | Completed ✅ |
+| P5-3 · Task and approval API | `feature/task-approval-api` | Completed ✅ |
+| P5-4 · Process run CLI and demo script | `feature/process-run-demo` | Completed ✅ |
 
 ---
 

@@ -52,3 +52,32 @@ class AuditSeverity(str, Enum):
     WARNING = "WARNING"
     ERROR = "ERROR"
     CRITICAL = "CRITICAL"
+
+
+class ProcessStatus(str, Enum):
+    """Process instance lifecycle states."""
+
+    PENDING = "pending"
+    ACTIVE = "active"
+    PAUSED = "paused"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class TaskStatus(str, Enum):
+    """Process task lifecycle states."""
+
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class ApprovalStatus(str, Enum):
+    """Approval request review status."""
+
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"

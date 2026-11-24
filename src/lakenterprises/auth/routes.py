@@ -71,6 +71,13 @@ DEMO_ROLE_PERMISSIONS: dict[str, list[str]] = {
         "read_document",
         "create_reports",
     ],
+    "manager": [
+        "view_documents",
+        "read_document",
+        "create_reports",
+        "manage_documents",
+        "approve_process",
+    ],
     "analyst": [
         "view_documents",
         "read_document",
