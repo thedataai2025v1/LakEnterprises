@@ -1,9 +1,10 @@
 """Identity and data models for the LakEnterprises platform."""
 
 from .base import Base, TimestampMixin, UUIDMixin  # noqa: F401
-from .entities import (AuditLog, AuthToken, Document,  # noqa: F401
-                       DocumentChunk, Permission, ResearchSession,
-                       ResearchSubQuestion, Role, User, WorkflowEvent)
+from .entities import Document  # noqa: F401
+from .entities import (AuditLog, AuthToken, DocumentChunk, Permission,
+                       ResearchSession, ResearchSubQuestion, Role, User,
+                       WorkflowEvent)
 from .enums import (AuditAction, AuditSeverity, PermissionType,  # noqa: F401
                     RoleType)
 
