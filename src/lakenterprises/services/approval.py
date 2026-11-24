@@ -17,7 +17,11 @@ logger = logging.getLogger(__name__)
 class ApprovalService:
     """Service managing human review gates and audit decisions."""
 
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Optional[Session] = None) -> None:
+        if db is None:
+            from lakenterprises.db import get_db_session
+
+            db = get_db_session()
         self.db = db
         self.approval_repo = ApprovalRequestRepository(db)
 

@@ -26,6 +26,7 @@ from lakenterprises.document.routes import router as document_router
 from lakenterprises.process.routes import approvals_router
 from lakenterprises.process.routes import router as process_router
 from lakenterprises.services.audit import AuditService
+from lakenterprises.tools.routes import router as tools_router
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +106,7 @@ def create_app(
     app.include_router(document_router)
     app.include_router(process_router)
     app.include_router(approvals_router)
+    app.include_router(tools_router)
 
     # ── Sample Protected Routes for RBAC Testing & Verification ──────
     @app.get(

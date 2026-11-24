@@ -6,8 +6,9 @@ from .entities import (ApprovalRequest, AuditLog, AuthToken, DocumentChunk,
                        Permission, ProcessInstance, ProcessTask,
                        ProcessTemplate, ResearchSession, ResearchSubQuestion,
                        Role, User, WorkflowEvent)
-from .enums import (ApprovalStatus, AuditAction, AuditSeverity,  # noqa: F401
-                    PermissionType, ProcessStatus, RoleType, TaskStatus)
+from .enums import AuditSeverity  # noqa: F401
+from .enums import (ApprovalStatus, AuditAction, PermissionType, ProcessStatus,
+                    RoleType, TaskStatus)
 
 __all__ = [
     # Bases

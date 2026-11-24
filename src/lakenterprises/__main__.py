@@ -475,6 +475,102 @@ def _cmd_process(args: argparse.Namespace, _settings: Settings) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Subcommand: tools
+# ---------------------------------------------------------------------------
+
+
+def _cmd_tools(args: argparse.Namespace, settings: Settings) -> None:
+    """Manage and execute agent tools."""
+    import json
+
+    from .tools import ToolExecutor, default_registry, register_default_tools
+
+    register_default_tools(default_registry)
+    executor = ToolExecutor(registry=default_registry)
+    action = args.action
+
+    if action == "list":
+        tools = default_registry.list_tools()
+        print(f"\nRegistered Agent Tools ({len(tools)} total):")
+        print("=" * 80)
+        print(
+            f"{'Tool Name':<28} {'Category':<10} {'Risk':<10} {'Approval':<10} {'Description'}"
+        )
+        print("-" * 80)
+        for t in tools:
+            appr_str = "Yes" if t.requires_approval else "No"
+            print(
+                f"{t.name:<28} {t.category.value:<10} {t.risk_level.value:<10} {appr_str:<10} {t.description[:60]}"
+            )
+        print()
+
+    elif action == "inspect":
+        tool_name = getattr(args, "tool_name", None)
+        if not tool_name:
+            print("Error: --tool-name is required for 'inspect'.", file=sys.stderr)
+            sys.exit(1)
+        tool = default_registry.get(tool_name)
+        if not tool:
+            print(f"Error: Tool '{tool_name}' not found.", file=sys.stderr)
+            sys.exit(1)
+        defn = tool.get_definition()
+        print(f"\nTool Specification: {tool.name}")
+        print("=" * 60)
+        print(f"Description:        {defn.description}")
+        print(f"Category:           {defn.category.value}")
+        print(f"Risk Level:         {defn.risk_level.value}")
+        print(f"Requires Approval:  {defn.requires_approval}")
+        print(f"Allowed Roles:      {', '.join(defn.allowed_roles)}")
+        print("\nParameters Schema:")
+        print(json.dumps(defn.parameters_schema, indent=2))
+        print()
+
+    elif action == "run":
+        tool_name = getattr(args, "tool_name", None)
+        if not tool_name:
+            print("Error: --tool-name is required for 'run'.", file=sys.stderr)
+            sys.exit(1)
+        raw_params = getattr(args, "params", "{}") or "{}"
+        try:
+            params = json.loads(raw_params)
+        except Exception as exc:
+            print(f"Error parsing JSON params: {exc}", file=sys.stderr)
+            sys.exit(1)
+
+        roles = [
+            r.strip() for r in (getattr(args, "roles", "admin") or "admin").split(",")
+        ]
+        user_id = getattr(args, "user_id", "cli_user") or "cli_user"
+        approval_id = getattr(args, "approval_id", None)
+
+        print(f"Executing tool '{tool_name}' as {roles}...")
+        result = executor.execute(
+            tool_name=tool_name,
+            parameters=params,
+            user_roles=roles,
+            user_id=user_id,
+            approval_id=approval_id,
+        )
+
+        print(f"\nExecution Result: {'SUCCESS' if result.success else 'FAILED'}")
+        print("=" * 60)
+        print(f"Success:            {result.success}")
+        print(f"Execution Time:     {result.execution_time_ms} ms")
+        print(f"Requires Approval:  {result.requires_approval}")
+        if result.approval_request_id:
+            print(f"Approval Request:   {result.approval_request_id}")
+        if result.error:
+            print(f"Error / Reason:     {result.error}")
+        if result.output is not None:
+            print("\nOutput:")
+            if isinstance(result.output, (dict, list)):
+                print(json.dumps(result.output, indent=2))
+            else:
+                print(result.output)
+        print()
+
+
+# ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
 
@@ -611,6 +707,43 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Instance title (for 'start').",
     )
 
+    # ── tools ──────────────────────────────────────────────────────────
+    tools_parser = subparsers.add_parser(
+        "tools",
+        help="Agent tools discovery, inspection, and execution",
+        description="List, inspect, and execute agent enterprise integration tools.",
+    )
+    tools_parser.add_argument(
+        "action",
+        choices=["list", "inspect", "run"],
+        help="Action: list registered tools, inspect a schema, or run a tool.",
+    )
+    tools_parser.add_argument(
+        "--tool-name",
+        default=None,
+        help="Name of the tool to inspect or execute.",
+    )
+    tools_parser.add_argument(
+        "--params",
+        default="{}",
+        help="JSON string of arguments for the tool execution.",
+    )
+    tools_parser.add_argument(
+        "--roles",
+        default="admin",
+        help="Comma-separated user roles executing the tool (default: admin).",
+    )
+    tools_parser.add_argument(
+        "--user-id",
+        default="cli_user",
+        help="User ID executing the tool (default: cli_user).",
+    )
+    tools_parser.add_argument(
+        "--approval-id",
+        default=None,
+        help="Approval request ID if tool requires prior approval.",
+    )
+
     return parser
 
 
@@ -658,6 +791,9 @@ def main(argv: list[str] | None = None) -> None:
 
     elif command == "process":
         _cmd_process(args, settings)
+
+    elif command == "tools":
+        _cmd_tools(args, settings)
 
     else:
         parser.print_help()
