@@ -287,3 +287,95 @@ class AuthToken(Base, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<AuthToken id={self.id!r} user_id={self.user_id!r} is_revoked={self.is_revoked}>"
+
+
+# ── Phase 5 entities (Enterprise Process & Approval) ───────────────────────
+
+
+class ProcessTemplate(Base, UUIDMixin, TimestampMixin):
+    """Reusable blueprint defining an enterprise business process."""
+
+    __tablename__ = "process_template"
+
+    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    definition: Mapped[dict] = mapped_column(JSON, default=dict, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    instances: Mapped[List[ProcessInstance]] = relationship(
+        "ProcessInstance", back_populates="template", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"<ProcessTemplate id={self.id!r} name={self.name!r} v={self.version}>"
+
+
+class ProcessInstance(Base, UUIDMixin, TimestampMixin):
+    """Execution instance of a process template with runtime state and context."""
+
+    __tablename__ = "process_instance"
+
+    template_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("process_template.id"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="active", nullable=False)
+    context: Mapped[Optional[dict]] = mapped_column(JSON, default=dict, nullable=True)
+    created_by_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("user.id"), nullable=True
+    )
+
+    template: Mapped[ProcessTemplate] = relationship(
+        "ProcessTemplate", back_populates="instances"
+    )
+    tasks: Mapped[List[ProcessTask]] = relationship(
+        "ProcessTask",
+        back_populates="instance",
+        cascade="all, delete-orphan",
+        order_by="ProcessTask.position",
+    )
+
+    def __repr__(self) -> str:
+        return f"<ProcessInstance id={self.id!r} title={self.title!r} status={self.status!r}>"
+
+
+class ProcessTask(Base, UUIDMixin, TimestampMixin):
+    """Granular unit of work inside a process instance."""
+
+    __tablename__ = "process_task"
+
+    instance_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("process_instance.id"), nullable=False
+    )
+    position: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    assignee_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    assignee_role: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
+    result: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    instance: Mapped[ProcessInstance] = relationship(
+        "ProcessInstance", back_populates="tasks"
+    )
+
+    def __repr__(self) -> str:
+        return f"<ProcessTask id={self.id!r} name={self.name!r} pos={self.position} status={self.status!r}>"
+
+
+class ApprovalRequest(Base, UUIDMixin, TimestampMixin):
+    """Governance gate requiring human sign-off for critical actions."""
+
+    __tablename__ = "approval_request"
+
+    target_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    target_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    action: Mapped[str] = mapped_column(String(50), nullable=False)
+    requested_by_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
+    reviewed_by_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    def __repr__(self) -> str:
+        return f"<ApprovalRequest id={self.id!r} action={self.action!r} status={self.status!r}>"

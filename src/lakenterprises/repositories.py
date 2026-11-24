@@ -14,8 +14,10 @@ from typing import List, Optional
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from lakenterprises.models.entities import (AuditLog, AuthToken, Document,
-                                            DocumentChunk, Permission, Role,
+from lakenterprises.models.entities import (ApprovalRequest, AuditLog,
+                                            AuthToken, Document, DocumentChunk,
+                                            Permission, ProcessInstance,
+                                            ProcessTask, ProcessTemplate, Role,
                                             User)
 
 logger = logging.getLogger(__name__)
@@ -840,11 +842,338 @@ class SessionRecordRepository:
         return AuthTokenRepository(self.db)
 
 
+# ---------------------------------------------------------------------------
+# Phase 5: Process Templates, Instances, Tasks, and Approvals
+# ---------------------------------------------------------------------------
+
+
+class ProcessTemplateRepository:
+    """Repository for managing process template definitions."""
+
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def create(
+        self,
+        *,
+        name: str,
+        description: Optional[str] = None,
+        version: int = 1,
+        definition: Optional[dict] = None,
+        is_active: bool = True,
+        id: Optional[str] = None,
+    ) -> ProcessTemplate:
+        import uuid as _uuid
+
+        tpl_id = id or str(_uuid.uuid4())
+        tpl = ProcessTemplate(
+            id=tpl_id,
+            name=name,
+            description=description,
+            version=version,
+            definition=definition or {},
+            is_active=is_active,
+        )
+        self.db.add(tpl)
+        self.db.flush()
+        return tpl
+
+    def get_by_id(self, template_id: str) -> Optional[ProcessTemplate]:
+        return self.db.get(ProcessTemplate, template_id)
+
+    def get_by_name(self, name: str) -> Optional[ProcessTemplate]:
+        stmt = select(ProcessTemplate).where(ProcessTemplate.name == name)
+        return self.db.execute(stmt).scalars().first()
+
+    def get_all(self, active_only: bool = False) -> List[ProcessTemplate]:
+        stmt = select(ProcessTemplate).order_by(ProcessTemplate.created_at.desc())
+        if active_only:
+            stmt = stmt.where(ProcessTemplate.is_active.is_(True))
+        return list(self.db.execute(stmt).scalars().all())
+
+    def update(
+        self,
+        template_id: str,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        version: Optional[int] = None,
+        definition: Optional[dict] = None,
+        is_active: Optional[bool] = None,
+    ) -> Optional[ProcessTemplate]:
+        tpl = self.get_by_id(template_id)
+        if not tpl:
+            return None
+        if name is not None:
+            tpl.name = name
+        if description is not None:
+            tpl.description = description
+        if version is not None:
+            tpl.version = version
+        if definition is not None:
+            tpl.definition = definition
+        if is_active is not None:
+            tpl.is_active = is_active
+        self.db.flush()
+        return tpl
+
+    def delete(self, template_id: str) -> bool:
+        tpl = self.get_by_id(template_id)
+        if not tpl:
+            return False
+        self.db.delete(tpl)
+        self.db.flush()
+        return True
+
+
+class ProcessInstanceRepository:
+    """Repository for managing process executions and state transitions."""
+
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def create(
+        self,
+        *,
+        template_id: str,
+        title: str,
+        status: str = "active",
+        context: Optional[dict] = None,
+        created_by_id: Optional[str] = None,
+        id: Optional[str] = None,
+    ) -> ProcessInstance:
+        import uuid as _uuid
+
+        inst_id = id or str(_uuid.uuid4())
+        inst = ProcessInstance(
+            id=inst_id,
+            template_id=template_id,
+            title=title,
+            status=status,
+            context=context or {},
+            created_by_id=created_by_id,
+        )
+        self.db.add(inst)
+        self.db.flush()
+        return inst
+
+    def get_by_id(self, instance_id: str) -> Optional[ProcessInstance]:
+        return self.db.get(ProcessInstance, instance_id)
+
+    def get_all(
+        self,
+        status: Optional[str] = None,
+        template_id: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[ProcessInstance]:
+        stmt = select(ProcessInstance).order_by(ProcessInstance.created_at.desc())
+        if status:
+            stmt = stmt.where(ProcessInstance.status == status)
+        if template_id:
+            stmt = stmt.where(ProcessInstance.template_id == template_id)
+        stmt = stmt.offset(offset).limit(limit)
+        return list(self.db.execute(stmt).scalars().all())
+
+    def update_status(
+        self, instance_id: str, new_status: str
+    ) -> Optional[ProcessInstance]:
+        inst = self.get_by_id(instance_id)
+        if not inst:
+            return None
+        inst.status = new_status
+        self.db.flush()
+        return inst
+
+    def update_context(
+        self, instance_id: str, context: dict
+    ) -> Optional[ProcessInstance]:
+        inst = self.get_by_id(instance_id)
+        if not inst:
+            return None
+        current = inst.context or {}
+        current.update(context)
+        inst.context = current
+        self.db.flush()
+        return inst
+
+    def delete(self, instance_id: str) -> bool:
+        inst = self.get_by_id(instance_id)
+        if not inst:
+            return False
+        self.db.delete(inst)
+        self.db.flush()
+        return True
+
+
+class ProcessTaskRepository:
+    """Repository for managing granular tasks inside a process instance."""
+
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def create(
+        self,
+        *,
+        instance_id: str,
+        position: int,
+        name: str,
+        description: Optional[str] = None,
+        assignee_id: Optional[str] = None,
+        assignee_role: Optional[str] = None,
+        status: str = "pending",
+        result: Optional[dict] = None,
+        id: Optional[str] = None,
+    ) -> ProcessTask:
+        import uuid as _uuid
+
+        task_id = id or str(_uuid.uuid4())
+        task = ProcessTask(
+            id=task_id,
+            instance_id=instance_id,
+            position=position,
+            name=name,
+            description=description,
+            assignee_id=assignee_id,
+            assignee_role=assignee_role,
+            status=status,
+            result=result or {},
+        )
+        self.db.add(task)
+        self.db.flush()
+        return task
+
+    def get_by_id(self, task_id: str) -> Optional[ProcessTask]:
+        return self.db.get(ProcessTask, task_id)
+
+    def get_by_instance_id(self, instance_id: str) -> List[ProcessTask]:
+        stmt = (
+            select(ProcessTask)
+            .where(ProcessTask.instance_id == instance_id)
+            .order_by(ProcessTask.position.asc())
+        )
+        return list(self.db.execute(stmt).scalars().all())
+
+    def update_status(
+        self,
+        task_id: str,
+        status: str,
+        result: Optional[dict] = None,
+    ) -> Optional[ProcessTask]:
+        task = self.get_by_id(task_id)
+        if not task:
+            return None
+        task.status = status
+        if result is not None:
+            curr = task.result or {}
+            curr.update(result)
+            task.result = curr
+        self.db.flush()
+        return task
+
+    def delete(self, task_id: str) -> bool:
+        task = self.get_by_id(task_id)
+        if not task:
+            return False
+        self.db.delete(task)
+        self.db.flush()
+        return True
+
+
+class ApprovalRequestRepository:
+    """Repository for managing human-in-the-loop governance sign-offs."""
+
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def create(
+        self,
+        *,
+        target_type: str,
+        target_id: str,
+        action: str,
+        requested_by_id: str,
+        status: str = "pending",
+        id: Optional[str] = None,
+    ) -> ApprovalRequest:
+        import uuid as _uuid
+
+        req_id = id or str(_uuid.uuid4())
+        approval = ApprovalRequest(
+            id=req_id,
+            target_type=target_type,
+            target_id=target_id,
+            action=action,
+            requested_by_id=requested_by_id,
+            status=status,
+        )
+        self.db.add(approval)
+        self.db.flush()
+        return approval
+
+    def get_by_id(self, request_id: str) -> Optional[ApprovalRequest]:
+        return self.db.get(ApprovalRequest, request_id)
+
+    def get_by_target(self, target_type: str, target_id: str) -> List[ApprovalRequest]:
+        stmt = (
+            select(ApprovalRequest)
+            .where(
+                ApprovalRequest.target_type == target_type,
+                ApprovalRequest.target_id == target_id,
+            )
+            .order_by(ApprovalRequest.created_at.desc())
+        )
+        return list(self.db.execute(stmt).scalars().all())
+
+    def get_pending(self, limit: int = 50, offset: int = 0) -> List[ApprovalRequest]:
+        stmt = (
+            select(ApprovalRequest)
+            .where(ApprovalRequest.status == "pending")
+            .order_by(ApprovalRequest.created_at.asc())
+            .offset(offset)
+            .limit(limit)
+        )
+        return list(self.db.execute(stmt).scalars().all())
+
+    def get_all(
+        self,
+        status: Optional[str] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[ApprovalRequest]:
+        stmt = select(ApprovalRequest).order_by(ApprovalRequest.created_at.desc())
+        if status:
+            stmt = stmt.where(ApprovalRequest.status == status)
+        stmt = stmt.offset(offset).limit(limit)
+        return list(self.db.execute(stmt).scalars().all())
+
+    def update_decision(
+        self,
+        request_id: str,
+        *,
+        status: str,
+        reviewed_by_id: str,
+        comment: Optional[str] = None,
+    ) -> Optional[ApprovalRequest]:
+        approval = self.get_by_id(request_id)
+        if not approval:
+            return None
+        approval.status = status
+        approval.reviewed_by_id = reviewed_by_id
+        approval.comment = comment
+        self.db.flush()
+        return approval
+
+
 __all__ = [
+    "ApprovalRequestRepository",
     "AuditLogRepository",
     "AuthTokenRepository",
     "DocumentChunkRepository",
     "PermissionRepository",
+    "ProcessInstanceRepository",
+    "ProcessTaskRepository",
+    "ProcessTemplateRepository",
     "RoleRepository",
     "SessionRecordRepository",
     "UserRepository",
