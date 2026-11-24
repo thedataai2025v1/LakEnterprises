@@ -571,6 +571,76 @@ def _cmd_tools(args: argparse.Namespace, settings: Settings) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Subcommand: guardrails
+# ---------------------------------------------------------------------------
+
+
+def _cmd_guardrails(args: argparse.Namespace, settings: Settings) -> None:
+    """Inspect and run guardrails security operations."""
+    import json
+
+    from .guardrails import (default_injection_guard, default_rules_engine,
+                             default_scrubber)
+
+    action = args.action
+
+    if action == "scrub":
+        raw_text = getattr(args, "text", "") or ""
+        if not raw_text:
+            print("Error: --text is required for 'scrub'.", file=sys.stderr)
+            sys.exit(1)
+        res = default_scrubber.scrub_text(raw_text)
+        print("\nPII & Secret Scrubber Results:")
+        print("=" * 60)
+        print(f"Contains PII:       {res.contains_pii}")
+        print(f"Contains Secrets:   {res.contains_secrets}")
+        print(f"Detections Count:   {len(res.detections)}")
+        if res.detections:
+            print("\nDetections:")
+            for d in res.detections:
+                print(f"  - [{d.entity_type}]: {d.original_snippet} -> {d.replacement}")
+        print("\nScrubbed Output:")
+        print(res.scrubbed_text)
+        print()
+
+    elif action == "check":
+        raw_text = getattr(args, "text", "") or ""
+        if not raw_text:
+            print("Error: --text is required for 'check'.", file=sys.stderr)
+            sys.exit(1)
+        strict = getattr(args, "strict", False)
+        res = default_injection_guard.check(raw_text, strict=strict)
+        print("\nPrompt Injection Evaluation:")
+        print("=" * 60)
+        print(f"Is Injected:        {res.is_injected}")
+        print(f"Risk Score:         {res.risk_score}")
+        print(f"Risk Level:         {res.risk_level}")
+        print(f"Matched Patterns:   {res.matched_patterns}")
+        print("\nSanitized Input Wrapper:")
+        print(res.sanitized_text)
+        print()
+
+    elif action == "evaluate":
+        event_type = getattr(args, "event_type", "INCIDENT") or "INCIDENT"
+        raw_payload = getattr(args, "payload", "{}") or "{}"
+        try:
+            payload = json.loads(raw_payload)
+        except Exception as exc:
+            print(f"Error parsing JSON payload: {exc}", file=sys.stderr)
+            sys.exit(1)
+        decision = default_rules_engine.evaluate(event_type=event_type, payload=payload)
+        print("\nSeverity & Escalation Evaluation:")
+        print("=" * 60)
+        print(f"Severity Tier:      {decision.severity.value}")
+        print(f"Should Escalate:    {decision.should_escalate}")
+        print(f"Requires Pager:     {decision.requires_immediate_pager}")
+        print(f"Assigned Role:      {decision.target_role}")
+        print(f"Reasons:            {decision.reasons}")
+        print(f"Recommended Action: {decision.recommended_action}")
+        print()
+
+
+# ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
 
@@ -744,6 +814,38 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Approval request ID if tool requires prior approval.",
     )
 
+    # ── guardrails ─────────────────────────────────────────────────────
+    guardrails_parser = subparsers.add_parser(
+        "guardrails",
+        help="Guardrails security evaluation, PII scrubbing, and rules",
+        description="Inspect PII/secrets, check prompt injection, and evaluate escalation severity.",
+    )
+    guardrails_parser.add_argument(
+        "action",
+        choices=["scrub", "check", "evaluate"],
+        help="Action: scrub PII/secrets, check prompt injection, or evaluate escalation.",
+    )
+    guardrails_parser.add_argument(
+        "--text",
+        default="",
+        help="Input text for 'scrub' or 'check'.",
+    )
+    guardrails_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Strict mode for 'check': raise error if injection detected.",
+    )
+    guardrails_parser.add_argument(
+        "--event-type",
+        default="INCIDENT",
+        help="Event type for 'evaluate' (default: INCIDENT).",
+    )
+    guardrails_parser.add_argument(
+        "--payload",
+        default="{}",
+        help="JSON payload for 'evaluate' rule testing.",
+    )
+
     return parser
 
 
@@ -794,6 +896,9 @@ def main(argv: list[str] | None = None) -> None:
 
     elif command == "tools":
         _cmd_tools(args, settings)
+
+    elif command == "guardrails":
+        _cmd_guardrails(args, settings)
 
     else:
         parser.print_help()

@@ -2,12 +2,8 @@
 
 import pytest
 
-from lakenterprises.tools.base import (
-    BaseTool,
-    FunctionalTool,
-    RiskLevel,
-    ToolCategory,
-)
+from lakenterprises.tools.base import (BaseTool, FunctionalTool, RiskLevel,
+                                       ToolCategory)
 from lakenterprises.tools.registry import ToolRegistry
 
 
