@@ -17,8 +17,8 @@ from sqlalchemy.orm import Session
 from lakenterprises.models.entities import (ApprovalRequest, AuditLog,
                                             AuthToken, Document, DocumentChunk,
                                             Permission, ProcessInstance,
-                                            ProcessTask, ProcessTemplate, Role,
-                                            User)
+                                            ProcessMemory, ProcessTask,
+                                            ProcessTemplate, Role, User)
 
 logger = logging.getLogger(__name__)
 
@@ -1165,6 +1165,156 @@ class ApprovalRequestRepository:
         return approval
 
 
+# ---------------------------------------------------------------------------
+# ProcessMemory
+# ---------------------------------------------------------------------------
+
+
+class ProcessMemoryRepository:
+    """Repository for managing durable process, entity, and workflow memories."""
+
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def create(
+        self,
+        *,
+        entity_type: str,
+        entity_id: str,
+        key: str,
+        content: str,
+        memory_type: str = "fact",
+        metadata: Optional[dict] = None,
+        importance: float = 1.0,
+        id: Optional[str] = None,
+    ) -> ProcessMemory:
+        import uuid as _uuid
+
+        mem_id = id or str(_uuid.uuid4())
+        item = ProcessMemory(
+            id=mem_id,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            memory_type=memory_type,
+            key=key,
+            content=content,
+            metadata_=metadata or {},
+            importance=importance,
+        )
+        self.db.add(item)
+        self.db.flush()
+        return item
+
+    def upsert(
+        self,
+        *,
+        entity_type: str,
+        entity_id: str,
+        key: str,
+        content: str,
+        memory_type: str = "fact",
+        metadata: Optional[dict] = None,
+        importance: float = 1.0,
+    ) -> ProcessMemory:
+        existing = self.get_by_key(entity_type, entity_id, key)
+        if existing:
+            existing.content = content
+            existing.memory_type = memory_type
+            existing.importance = importance
+            if metadata is not None:
+                existing.metadata_ = metadata
+            self.db.flush()
+            return existing
+        return self.create(
+            entity_type=entity_type,
+            entity_id=entity_id,
+            key=key,
+            content=content,
+            memory_type=memory_type,
+            metadata=metadata,
+            importance=importance,
+        )
+
+    def get_by_id(self, memory_id: str) -> Optional[ProcessMemory]:
+        return self.db.get(ProcessMemory, memory_id)
+
+    def get_by_key(
+        self, entity_type: str, entity_id: str, key: str
+    ) -> Optional[ProcessMemory]:
+        stmt = select(ProcessMemory).where(
+            ProcessMemory.entity_type == entity_type,
+            ProcessMemory.entity_id == entity_id,
+            ProcessMemory.key == key,
+        )
+        return self.db.execute(stmt).scalars().first()
+
+    def get_by_entity(
+        self,
+        entity_type: str,
+        entity_id: str,
+        memory_type: Optional[str] = None,
+        min_importance: float = 0.0,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> List[ProcessMemory]:
+        stmt = (
+            select(ProcessMemory)
+            .where(
+                ProcessMemory.entity_type == entity_type,
+                ProcessMemory.entity_id == entity_id,
+                ProcessMemory.importance >= min_importance,
+            )
+            .order_by(ProcessMemory.importance.desc(), ProcessMemory.created_at.desc())
+        )
+        if memory_type:
+            stmt = stmt.where(ProcessMemory.memory_type == memory_type)
+        stmt = stmt.offset(offset).limit(limit)
+        return list(self.db.execute(stmt).scalars().all())
+
+    def search(
+        self,
+        query: str,
+        entity_type: Optional[str] = None,
+        entity_id: Optional[str] = None,
+        memory_type: Optional[str] = None,
+        min_importance: float = 0.0,
+        limit: int = 50,
+    ) -> List[ProcessMemory]:
+        stmt = select(ProcessMemory).where(
+            ProcessMemory.importance >= min_importance,
+            or_(
+                ProcessMemory.content.ilike(f"%{query}%"),
+                ProcessMemory.key.ilike(f"%{query}%"),
+            ),
+        )
+        if entity_type:
+            stmt = stmt.where(ProcessMemory.entity_type == entity_type)
+        if entity_id:
+            stmt = stmt.where(ProcessMemory.entity_id == entity_id)
+        if memory_type:
+            stmt = stmt.where(ProcessMemory.memory_type == memory_type)
+        stmt = stmt.order_by(
+            ProcessMemory.importance.desc(), ProcessMemory.created_at.desc()
+        ).limit(limit)
+        return list(self.db.execute(stmt).scalars().all())
+
+    def delete(self, memory_id: str) -> bool:
+        item = self.get_by_id(memory_id)
+        if not item:
+            return False
+        self.db.delete(item)
+        self.db.flush()
+        return True
+
+    def delete_by_entity(self, entity_type: str, entity_id: str) -> int:
+        items = self.get_by_entity(entity_type, entity_id, limit=1000)
+        count = len(items)
+        for item in items:
+            self.db.delete(item)
+        self.db.flush()
+        return count
+
+
 __all__ = [
     "ApprovalRequestRepository",
     "AuditLogRepository",
@@ -1172,6 +1322,7 @@ __all__ = [
     "DocumentChunkRepository",
     "PermissionRepository",
     "ProcessInstanceRepository",
+    "ProcessMemoryRepository",
     "ProcessTaskRepository",
     "ProcessTemplateRepository",
     "RoleRepository",

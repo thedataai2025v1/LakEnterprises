@@ -3,7 +3,7 @@
 from .base import Base, TimestampMixin, UUIDMixin  # noqa: F401
 from .entities import Document  # noqa: F401
 from .entities import (ApprovalRequest, AuditLog, AuthToken, DocumentChunk,
-                       Permission, ProcessInstance, ProcessTask,
+                       Permission, ProcessInstance, ProcessMemory, ProcessTask,
                        ProcessTemplate, ResearchSession, ResearchSubQuestion,
                        Role, User, WorkflowEvent)
 from .enums import AuditSeverity  # noqa: F401
@@ -31,6 +31,7 @@ __all__ = [
     "DocumentChunk",
     "Permission",
     "ProcessInstance",
+    "ProcessMemory",
     "ProcessTask",
     "ProcessTemplate",
     "ResearchSession",

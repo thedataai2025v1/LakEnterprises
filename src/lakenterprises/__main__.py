@@ -640,6 +640,100 @@ def _cmd_guardrails(args: argparse.Namespace, settings: Settings) -> None:
         print()
 
 
+def _cmd_memory(args: argparse.Namespace, settings: Settings) -> None:
+    """Handle the 'memory' command group."""
+    from lakenterprises.memory import (
+        ChatMessage,
+        LongTermMemoryItem,
+        MemoryType,
+        MessageRole,
+        RecallRequest,
+        default_long_term_store,
+        default_memory_service,
+        default_session_store,
+    )
+
+    action = getattr(args, "memory_action", "session")
+
+    if action == "session":
+        session_id = getattr(args, "session_id", "default")
+        sess = default_session_store.get_session(session_id)
+        print(f"\nSession Context: {session_id}")
+        print("=" * 60)
+        print(f"Messages count: {len(sess.messages)}")
+        for i, msg in enumerate(sess.messages, 1):
+            role_val = msg.role.value if hasattr(msg.role, "value") else str(msg.role)
+            print(f"  {i}. [{role_val}]: {msg.content}")
+        print(f"Variables: {sess.variables}")
+        print()
+
+    elif action == "append":
+        session_id = getattr(args, "session_id", "default")
+        role_str = getattr(args, "role", "user") or "user"
+        content = getattr(args, "content", "") or ""
+        try:
+            m_role = MessageRole(role_str)
+        except ValueError:
+            m_role = MessageRole.USER
+        default_session_store.append_message(
+            session_id, ChatMessage(role=m_role, content=content)
+        )
+        print(f"Appended message to session '{session_id}'.")
+
+    elif action == "recall":
+        session_id = getattr(args, "session_id", None)
+        query = getattr(args, "query", None)
+        entity_type = getattr(args, "entity_type", None)
+        entity_id = getattr(args, "entity_id", None)
+        res = default_memory_service.recall(
+            RecallRequest(
+                session_id=session_id,
+                query=query,
+                entity_type=entity_type,
+                entity_id=entity_id,
+            )
+        )
+        print("\nSynthesized Enterprise Memory Context:")
+        print("=" * 60)
+        print(res.synthesized_context)
+        print()
+
+    elif action == "store":
+        entity_type = getattr(args, "entity_type", "general")
+        entity_id = getattr(args, "entity_id", "0")
+        key = getattr(args, "key", "note")
+        content = getattr(args, "content", "")
+        mem_type_str = getattr(args, "memory_type", "fact") or "fact"
+        importance = float(getattr(args, "importance", 1.0) or 1.0)
+        try:
+            mem_type = MemoryType(mem_type_str)
+        except ValueError:
+            mem_type = MemoryType.FACT
+        item = LongTermMemoryItem(
+            entity_type=entity_type,
+            entity_id=entity_id,
+            memory_type=mem_type,
+            key=key,
+            content=content,
+            importance=importance,
+        )
+        stored = default_long_term_store.store(item)
+        print(f"Stored long-term memory ID: {stored.id}")
+
+    elif action == "query":
+        entity_type = getattr(args, "entity_type", None)
+        entity_id = getattr(args, "entity_id", None)
+        query = getattr(args, "query", None)
+        items = default_long_term_store.query(
+            entity_type=entity_type, entity_id=entity_id
+        )
+        print(f"\nLong-Term Memories ({len(items)} found):")
+        print("=" * 60)
+        for it in items:
+            print(f"- [{it.entity_type}:{it.entity_id} | {it.key}]: {it.content}")
+        print()
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -846,6 +940,64 @@ def _build_parser() -> argparse.ArgumentParser:
         help="JSON payload for 'evaluate' rule testing.",
     )
 
+    # ── memory ─────────────────────────────────────────────────────────
+    memory_parser = subparsers.add_parser(
+        "memory",
+        help="Manage short-term and long-term enterprise memory",
+        description="Inspect sessions, recall context, or manage durable memories.",
+    )
+    memory_parser.add_argument(
+        "memory_action",
+        choices=["session", "append", "recall", "store", "query"],
+        help="Memory operation to execute.",
+    )
+    memory_parser.add_argument(
+        "--session-id",
+        default="default",
+        help="Session identifier for conversational memory.",
+    )
+    memory_parser.add_argument(
+        "--role",
+        default="user",
+        help="Message role for 'append' (user, assistant, system).",
+    )
+    memory_parser.add_argument(
+        "--content",
+        default="",
+        help="Content text for message turn or memory item.",
+    )
+    memory_parser.add_argument(
+        "--entity-type",
+        default=None,
+        help="Entity type for long-term memory (e.g. customer, process).",
+    )
+    memory_parser.add_argument(
+        "--entity-id",
+        default=None,
+        help="Entity identifier for long-term memory (e.g. CUST-1001).",
+    )
+    memory_parser.add_argument(
+        "--key",
+        default="general",
+        help="Topic key for memory item.",
+    )
+    memory_parser.add_argument(
+        "--memory-type",
+        default="fact",
+        help="Memory classification (fact, preference, decision).",
+    )
+    memory_parser.add_argument(
+        "--importance",
+        type=float,
+        default=1.0,
+        help="Importance score (0.0 to 5.0).",
+    )
+    memory_parser.add_argument(
+        "--query",
+        default=None,
+        help="Search query for memory recall or query.",
+    )
+
     return parser
 
 
@@ -899,6 +1051,9 @@ def main(argv: list[str] | None = None) -> None:
 
     elif command == "guardrails":
         _cmd_guardrails(args, settings)
+
+    elif command == "memory":
+        _cmd_memory(args, settings)
 
     else:
         parser.print_help()

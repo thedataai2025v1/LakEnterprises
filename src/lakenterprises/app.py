@@ -25,6 +25,7 @@ from lakenterprises.auth.routes import router as auth_router
 from lakenterprises.document.routes import router as document_router
 from lakenterprises.guardrails.middleware import PIIScrubberMiddleware
 from lakenterprises.guardrails.routes import router as guardrails_router
+from lakenterprises.memory.routes import router as memory_router
 from lakenterprises.process.routes import approvals_router
 from lakenterprises.process.routes import router as process_router
 from lakenterprises.services.audit import AuditService
@@ -113,6 +114,7 @@ def create_app(
     app.include_router(approvals_router)
     app.include_router(tools_router)
     app.include_router(guardrails_router)
+    app.include_router(memory_router)
 
     # ── Sample Protected Routes for RBAC Testing & Verification ──────
     @app.get(

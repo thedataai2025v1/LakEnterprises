@@ -30,6 +30,10 @@ class ScrubResult(BaseModel):
     def has_findings(self) -> bool:
         return self.contains_pii or self.contains_secrets
 
+    @property
+    def sanitized_text(self) -> str:
+        return self.scrubbed_text
+
 
 def _luhn_checksum(card_number_str: str) -> bool:
     """Verify Luhn algorithm checksum for credit card numbers."""
