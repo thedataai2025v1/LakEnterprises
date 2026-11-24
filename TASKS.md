@@ -130,14 +130,14 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P9-1 · Workflow schemas and fake LLM harness | `feature/workflow-schemas-fake-llm` | Pending ❌ |
-| P9-2 · Supervisor / orchestrator agent | `feature/agent-supervisor` | Pending ❌ |
-| P9-3 · Document analysis agent | `feature/agent-document-analyst` | Pending ❌ |
-| P9-4 · Compliance check agent | `feature/agent-compliance` | Pending ❌ |
-| P9-5 · Knowledge retrieval agent | `feature/agent-knowledge-retrieval` | Pending ❌ |
-| P9-6 · Resolution / response drafting agent | `feature/agent-response-draft` | Pending ❌ |
-| P9-7 · Escalation and handoff agent | `feature/agent-escalation-handoff` | Pending ❌ |
-| P9-8 · Eval case dataset and tests | `feature/agent-eval-dataset` | Pending ❌ |
+| P9-1 · Workflow schemas and fake LLM harness | `feature/workflow-schemas-fake-llm` | Completed ✅ |
+| P9-2 · Supervisor / orchestrator agent | `feature/agent-supervisor` | Completed ✅ |
+| P9-3 · Document analysis agent | `feature/agent-document-analyst` | Completed ✅ |
+| P9-4 · Compliance check agent | `feature/agent-compliance` | Completed ✅ |
+| P9-5 · Knowledge retrieval agent | `feature/agent-knowledge-retrieval` | Completed ✅ |
+| P9-6 · Resolution / response drafting agent | `feature/agent-response-draft` | Completed ✅ |
+| P9-7 · Escalation and handoff agent | `feature/agent-escalation-handoff` | Completed ✅ |
+| P9-8 · Eval case dataset and tests | `feature/agent-eval-dataset` | Completed ✅ |
 
 ---
 
