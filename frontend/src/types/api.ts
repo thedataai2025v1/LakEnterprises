@@ -100,20 +100,51 @@ export interface WorkflowRunRequest {
   input_data: Record<string, any>;
 }
 
+export interface WorkflowTraceEvent {
+  event_id: string;
+  process_id: string;
+  node_name: string;
+  event_type: string;
+  payload: Record<string, any>;
+  timestamp: string;
+  duration_ms?: number;
+}
+
+export interface WorkflowCheckpoint {
+  checkpoint_id: string;
+  process_id: string;
+  node_name: string;
+  step_index: number;
+  state_snapshot: Record<string, any>;
+  timestamp: string;
+}
+
+export interface WorkflowSLAMetrics {
+  tier: string;
+  max_hours: number;
+  deadline: string;
+  elapsed_hours: number;
+  hours_remaining: number;
+  is_breached: boolean;
+}
+
 export interface WorkflowState {
   process_id: string;
-  status: ProcessStatus;
-  current_node: string;
-  history: Array<{
+  current_step?: string;
+  status?: ProcessStatus;
+  instruction?: string;
+  title?: string;
+  context?: Record<string, any>;
+  history?: Array<{
     node: string;
     timestamp: string;
     summary?: string;
+    output?: Record<string, any>;
   }>;
   risk_level?: string;
   approval_status?: string;
-  sla?: {
-    deadline: string;
-    hours_remaining: number;
-    is_breached: boolean;
-  };
+  escalation_tier?: string;
+  resolution_action?: string;
+  resolution_result?: Record<string, any>;
+  sla?: WorkflowSLAMetrics;
 }
