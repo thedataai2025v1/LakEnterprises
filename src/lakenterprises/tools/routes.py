@@ -9,8 +9,8 @@ from pydantic import BaseModel, Field
 
 from lakenterprises.auth.middleware import get_current_user
 from lakenterprises.tools import (RiskLevel, ToolCategory, ToolDefinition,
-                                  ToolExecutor, ToolResult,
-                                  default_registry, register_default_tools)
+                                  ToolExecutor, ToolResult, default_registry,
+                                  register_default_tools)
 
 router = APIRouter(prefix="/api/v1/tools", tags=["tools"])
 

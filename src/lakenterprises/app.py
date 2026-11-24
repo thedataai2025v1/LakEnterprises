@@ -23,6 +23,8 @@ from lakenterprises.auth.rate_limit import (RateLimitMiddleware,
                                             get_rate_limiter)
 from lakenterprises.auth.routes import router as auth_router
 from lakenterprises.document.routes import router as document_router
+from lakenterprises.guardrails.middleware import PIIScrubberMiddleware
+from lakenterprises.guardrails.routes import router as guardrails_router
 from lakenterprises.process.routes import approvals_router
 from lakenterprises.process.routes import router as process_router
 from lakenterprises.services.audit import AuditService
@@ -72,6 +74,9 @@ def create_app(
     # 3. Audit Logging & Request ID Middleware
     app.add_middleware(AuditMiddleware, audit_service=audit_service)
 
+    # 4. Guardrails PII & Secret Scrubber Middleware
+    app.add_middleware(PIIScrubberMiddleware)
+
     # ── Health Endpoints ──────────────────────────────────────────────
     @app.get("/health", tags=["health"])
     @app.get("/health/live", tags=["health"])
@@ -107,6 +112,7 @@ def create_app(
     app.include_router(process_router)
     app.include_router(approvals_router)
     app.include_router(tools_router)
+    app.include_router(guardrails_router)
 
     # ── Sample Protected Routes for RBAC Testing & Verification ──────
     @app.get(

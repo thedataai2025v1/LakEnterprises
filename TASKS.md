@@ -103,10 +103,10 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P7-1 · PII/secret scrubber middleware | `feature/guardrail-secret-scrub` | Pending ❌ |
-| P7-2 · Prompt injection guard | `feature/guardrail-injection` | Pending ❌ |
-| P7-3 · Output schema validation | `feature/guardrail-output-validation` | Pending ❌ |
-| P7-4 · Escalation and severity rules engine | `feature/policy-escalation-rules` | Pending ❌ |
+| P7-1 · PII/secret scrubber middleware | `feature/guardrail-secret-scrub` | Completed ✅ |
+| P7-2 · Prompt injection guard | `feature/guardrail-injection` | Completed ✅ |
+| P7-3 · Output schema validation | `feature/guardrail-output-validation` | Completed ✅ |
+| P7-4 · Escalation and severity rules engine | `feature/policy-escalation-rules` | Completed ✅ |
 
 ---
 
