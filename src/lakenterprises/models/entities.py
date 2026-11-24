@@ -1,533 +1,289 @@
-"""SQLAlchemy ORM entity definitions for the LakEnterprises platform.
-
-Tables
-------
-users                  – platform users with RBAC roles
-documents              – uploaded knowledge-base documents
-document_chunks        – chunked segments of documents (for vector retrieval)
-research_sessions      – one row per analyst research question
-research_sub_questions – sub-questions decomposed from one session
-workflow_events        – fine-grained event log for a session
-audit_log              – immutable record of every mutating action
-process_templates      – reusable enterprise-process templates (Phase 5 schema)
-process_instances      – live instances of a process template
-process_tasks          – individual tasks inside an instance
-approval_requests      – approval records for gated actions
-"""
+"""SQLAlchemy ORM entity classes for the LakEnterprises platform."""
 
 from __future__ import annotations
 
-import json
+import uuid
 from datetime import datetime
-from typing import Any
+from typing import List, Optional
 
-from sqlalchemy import (
-    Boolean,
-    ForeignKey,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-)
+from sqlalchemy import (JSON, Boolean, Column, DateTime, Float, ForeignKey,
+                        Integer, String, Table, Text, func)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import Base, TimestampMixin, UUIDPrimaryKeyMixin, _new_uuid, _utcnow
-from .enums import (
-    ApprovalStatus,
-    AuditAction,
-    DocumentStatus,
-    DocumentType,
-    EventType,
-    ProcessStatus,
-    QueryComplexity,
-    RetrievalStrategy,
-    SessionStatus,
-    TaskStatus,
-    UserRole,
-    UserStatus,
+from .base import Base, TimestampMixin, UUIDMixin
+
+# ── Association tables ────────────────────────────────────────────────
+
+role_user = Table(
+    "role_user",
+    Base.metadata,
+    Column("user_id", String(36), ForeignKey("user.id"), primary_key=True),
+    Column("role_id", String(36), ForeignKey("role.id"), primary_key=True),
+)
+
+role_permission = Table(
+    "role_permission",
+    Base.metadata,
+    Column("role_id", String(36), ForeignKey("role.id"), primary_key=True),
+    Column("permission_id", String(36), ForeignKey("permission.id"), primary_key=True),
 )
 
 
-# ---------------------------------------------------------------------------
-# User
-# ---------------------------------------------------------------------------
+# ── Phase 2 entities (unchanged) ──────────────────────────────────────
 
 
-class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """Platform user, identified by email, assigned one RBAC role."""
+class Document(Base, UUIDMixin):
+    """Chunked document ingested into the platform."""
 
-    __tablename__ = "users"
+    __tablename__ = "document"
 
-    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
-    role: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=UserRole.viewer.value
+    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    source_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=UserStatus.active.value
-    )
-    is_demo: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSON, nullable=True)
 
-    # Back-refs
-    research_sessions: Mapped[list["ResearchSession"]] = relationship(
-        "ResearchSession", back_populates="user", cascade="all, delete-orphan"
-    )
-    audit_entries: Mapped[list["AuditLog"]] = relationship(
-        "AuditLog", back_populates="user", cascade="all, delete-orphan"
-    )
-    documents: Mapped[list["Document"]] = relationship(
-        "Document", back_populates="uploader", cascade="all, delete-orphan"
-    )
-    approval_decisions: Mapped[list["ApprovalRequest"]] = relationship(
-        "ApprovalRequest",
-        foreign_keys="ApprovalRequest.decided_by_id",
-        back_populates="decided_by",
-    )
-
-    @property
-    def role_enum(self) -> UserRole:
-        return UserRole(self.role)
-
-    @property
-    def status_enum(self) -> UserStatus:
-        return UserStatus(self.status)
-
-
-# ---------------------------------------------------------------------------
-# Document
-# ---------------------------------------------------------------------------
-
-
-class Document(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """Uploaded knowledge-base document (before or after chunking)."""
-
-    __tablename__ = "documents"
-
-    filename: Mapped[str] = mapped_column(String(512), nullable=False)
-    original_filename: Mapped[str] = mapped_column(String(512), nullable=False)
-    doc_type: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=DocumentType.other.value
-    )
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=DocumentStatus.pending.value
-    )
-    file_size_bytes: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    uploader_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False, index=True
-    )
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    uploader: Mapped["User"] = relationship("User", back_populates="documents")
-    chunks: Mapped[list["DocumentChunk"]] = relationship(
+    chunks: Mapped[List[DocumentChunk]] = relationship(
         "DocumentChunk", back_populates="document", cascade="all, delete-orphan"
     )
-    approval_requests: Mapped[list["ApprovalRequest"]] = relationship(
-        "ApprovalRequest",
-        foreign_keys="ApprovalRequest.target_id",
-        primaryjoin="and_(ApprovalRequest.target_id == Document.id, "
-                    "ApprovalRequest.target_type == 'document')",
-        cascade="all, delete-orphan",
-        overlaps="approval_requests",
+
+    def __repr__(self) -> str:
+        return f"<Document id={self.id!r} name={self.name!r}>"
+
+
+class DocumentChunk(Base):
+    """A text chunk extracted from a document."""
+
+    __tablename__ = "document_chunk"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    chunk_id: Mapped[str] = mapped_column(
+        String(64), unique=True, default=lambda: str(uuid.uuid4()), nullable=False
     )
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        return json.loads(self.metadata_json or "{}")
-
-    @metadata.setter
-    def metadata(self, value: dict[str, Any]) -> None:
-        self.metadata_json = json.dumps(value)
-
-    @property
-    def status_enum(self) -> DocumentStatus:
-        return DocumentStatus(self.status)
-
-
-# ---------------------------------------------------------------------------
-# DocumentChunk
-# ---------------------------------------------------------------------------
-
-
-class DocumentChunk(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """One chunked segment of a document, ready for vector embedding."""
-
-    __tablename__ = "document_chunks"
-    __table_args__ = (
-        UniqueConstraint("document_id", "chunk_index", name="uq_chunk_per_doc"),
-    )
-
+    chunk_index: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     document_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("documents.id"), nullable=False, index=True
+        String(36), ForeignKey("document.id"), nullable=False
     )
-    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    token_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    metadata_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    # vector_id stores the ID assigned by the external vector store (Qdrant, Chroma…)
-    vector_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
-
-    document: Mapped["Document"] = relationship("Document", back_populates="chunks")
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        return json.loads(self.metadata_json or "{}")
-
-    @metadata.setter
-    def metadata(self, value: dict[str, Any]) -> None:
-        self.metadata_json = json.dumps(value)
-
-
-# ---------------------------------------------------------------------------
-# ResearchSession
-# ---------------------------------------------------------------------------
-
-
-class ResearchSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """One research session created by an analyst's question."""
-
-    __tablename__ = "research_sessions"
-
-    user_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False, index=True
+    content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    embedding: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSON, nullable=True)
+    word_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    page_number: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    question: Mapped[str] = mapped_column(Text, nullable=False)
-    complexity: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=SessionStatus.running.value
-    )
-    answer: Mapped[str | None] = mapped_column(Text, nullable=True)
-    citations_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
-    metadata_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # Timing
-    started_at: Mapped[datetime | None] = mapped_column(
-        "started_at", String(64), nullable=True
-    )
-    completed_at: Mapped[datetime | None] = mapped_column(
-        "completed_at", String(64), nullable=True
-    )
-    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
-    user: Mapped["User"] = relationship("User", back_populates="research_sessions")
-    sub_questions: Mapped[list["ResearchSubQuestion"]] = relationship(
-        "ResearchSubQuestion",
-        back_populates="session",
-        cascade="all, delete-orphan",
-        order_by="ResearchSubQuestion.position",
+    document: Mapped[Document] = relationship("Document", back_populates="chunks")
+
+    def __repr__(self) -> str:
+        return f"<DocumentChunk id={self.id} chunk_id={self.chunk_id!r}>"
+
+
+class ResearchSession(Base, UUIDMixin, TimestampMixin):
+    """A multi-step research conversation session."""
+
+    __tablename__ = "research_session"
+
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
+
+    user_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("user.id"), nullable=True
     )
-    events: Mapped[list["WorkflowEvent"]] = relationship(
+    user: Mapped[Optional[User]] = relationship(
+        "User", back_populates="research_sessions"
+    )
+
+    sub_questions: Mapped[List[ResearchSubQuestion]] = relationship(
+        "ResearchSubQuestion", back_populates="session", cascade="all, delete-orphan"
+    )
+    events: Mapped[List[WorkflowEvent]] = relationship(
         "WorkflowEvent", back_populates="session", cascade="all, delete-orphan"
     )
 
-    @property
-    def citations(self) -> list[str]:
-        return json.loads(self.citations_json or "[]")
-
-    @citations.setter
-    def citations(self, value: list[str]) -> None:
-        self.citations_json = json.dumps(value)
-
-    @property
-    def metadata(self) -> dict[str, Any]:
-        return json.loads(self.metadata_json or "{}")
-
-    @metadata.setter
-    def metadata(self, value: dict[str, Any]) -> None:
-        self.metadata_json = json.dumps(value)
-
-    @property
-    def status_enum(self) -> SessionStatus:
-        return SessionStatus(self.status)
-
-    @property
-    def complexity_enum(self) -> QueryComplexity | None:
-        return QueryComplexity(self.complexity) if self.complexity else None
+    def __repr__(self) -> str:
+        return f"<ResearchSession id={self.id!r} title={self.title!r} status={self.status!r}>"
 
 
-# ---------------------------------------------------------------------------
-# ResearchSubQuestion
-# ---------------------------------------------------------------------------
+class ResearchSubQuestion(Base):
+    """A sub-question spawned from a research session."""
 
+    __tablename__ = "research_sub_question"
 
-class ResearchSubQuestion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """One sub-question produced by the decompose node of a session."""
-
-    __tablename__ = "research_sub_questions"
-
+    id: Mapped[int] = mapped_column(primary_key=True)
     session_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("research_sessions.id"), nullable=False, index=True
+        String(36), ForeignKey("research_session.id"), nullable=False
     )
-    position: Mapped[int] = mapped_column(Integer, nullable=False)
     question: Mapped[str] = mapped_column(Text, nullable=False)
-    strategy: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=RetrievalStrategy.vector.value
-    )
-    answer: Mapped[str | None] = mapped_column(Text, nullable=True)
-    evidence_json: Mapped[str] = mapped_column(Text, default="[]", nullable=False)
-    verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    verification_ratio: Mapped[float | None] = mapped_column(
-        "verification_ratio", String(16), nullable=True
+    status: Mapped[str] = mapped_column(String(50), default="pending", nullable=False)
+    answer: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    session: Mapped["ResearchSession"] = relationship(
+    session: Mapped[ResearchSession] = relationship(
         "ResearchSession", back_populates="sub_questions"
     )
 
-    @property
-    def evidence(self) -> list[dict[str, Any]]:
-        return json.loads(self.evidence_json or "[]")
-
-    @evidence.setter
-    def evidence(self, value: list[dict[str, Any]]) -> None:
-        self.evidence_json = json.dumps(value)
-
-    @property
-    def strategy_enum(self) -> RetrievalStrategy:
-        return RetrievalStrategy(self.strategy)
+    def __repr__(self) -> str:
+        return f"<ResearchSubQuestion id={self.id} question={self.question!r} status={self.status!r}>"
 
 
-# ---------------------------------------------------------------------------
-# WorkflowEvent
-# ---------------------------------------------------------------------------
+class WorkflowEvent(Base):
+    """An event in a research session workflow."""
 
+    __tablename__ = "workflow_event"
 
-class WorkflowEvent(UUIDPrimaryKeyMixin, Base):
-    """Fine-grained immutable event emitted during a research run.
-
-    Intentionally has no ``updated_at``; events are write-once.
-    """
-
-    __tablename__ = "workflow_events"
-
+    id: Mapped[int] = mapped_column(primary_key=True)
     session_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("research_sessions.id"), nullable=False, index=True
+        String(36), ForeignKey("research_session.id"), nullable=False
     )
-    event_type: Mapped[str] = mapped_column(
-        String(64), nullable=False, default=EventType.node_start.value
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    node_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    payload_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    created_at: Mapped[str] = mapped_column(
-        String(64), default=lambda: _utcnow().isoformat(), nullable=False
-    )
+    details: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
-    session: Mapped["ResearchSession"] = relationship(
+    session: Mapped[ResearchSession] = relationship(
         "ResearchSession", back_populates="events"
     )
 
-    @property
-    def payload(self) -> dict[str, Any]:
-        return json.loads(self.payload_json or "{}")
-
-    @payload.setter
-    def payload(self, value: dict[str, Any]) -> None:
-        self.payload_json = json.dumps(value)
+    def __repr__(self) -> str:
+        return f"<WorkflowEvent id={self.id} event_type={self.event_type!r}>"
 
 
-# ---------------------------------------------------------------------------
-# AuditLog
-# ---------------------------------------------------------------------------
-
-
-class AuditLog(UUIDPrimaryKeyMixin, Base):
-    """Immutable audit trail – one row per mutating action.
-
-    Intentionally has no ``updated_at`` column.
-    """
+class AuditLog(Base):
+    """Audit log entry."""
 
     __tablename__ = "audit_log"
 
-    user_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True, index=True
+    id: Mapped[int] = mapped_column(primary_key=True)
+    entry_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    action: Mapped[str] = mapped_column(String(100), nullable=False)
+    user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    entity_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    entity_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    severity: Mapped[str] = mapped_column(String(20), default="INFO", nullable=False)
+    details: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    action: Mapped[str] = mapped_column(String(64), nullable=False)
-    target_type: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    target_id: Mapped[str | None] = mapped_column(String(36), nullable=True, index=True)
-    detail_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    request_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    created_at: Mapped[str] = mapped_column(
-        String(64), default=lambda: _utcnow().isoformat(), nullable=False
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    user: Mapped["User | None"] = relationship("User", back_populates="audit_entries")
-
-    @property
-    def detail(self) -> dict[str, Any]:
-        return json.loads(self.detail_json or "{}")
-
-    @detail.setter
-    def detail(self, value: dict[str, Any]) -> None:
-        self.detail_json = json.dumps(value)
+    def __repr__(self) -> str:
+        return f"<AuditLog id={self.id} action={self.action!r}>"
 
 
-# ---------------------------------------------------------------------------
-# ProcessTemplate  (Phase 5 schema – seeded now so migrations are stable)
-# ---------------------------------------------------------------------------
+# ── Phase 3 entities ──────────────────────────────────────────────────
 
 
-class ProcessTemplate(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """Reusable blueprint describing an enterprise workflow."""
+class User(Base, UUIDMixin, TimestampMixin):
+    """Authenticated platform user."""
 
-    __tablename__ = "process_templates"
+    __tablename__ = "user"
 
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    definition_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
+    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    first_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    last_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    created_by_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
+    is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
-    instances: Mapped[list["ProcessInstance"]] = relationship(
-        "ProcessInstance", back_populates="template", cascade="all, delete-orphan"
+    roles: Mapped[List[Role]] = relationship(
+        "Role", secondary=role_user, back_populates="users"
     )
+    auth_tokens: Mapped[List[AuthToken]] = relationship(
+        "AuthToken", back_populates="user", cascade="all, delete-orphan"
+    )
+    research_sessions: Mapped[List[ResearchSession]] = relationship(
+        "ResearchSession", back_populates="user", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"<User id={self.id!r} username={self.username!r} email={self.email!r}>"
+
+
+class Role(Base, UUIDMixin, TimestampMixin):
+    """Named role with an associated set of permissions."""
+
+    __tablename__ = "role"
+
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    permissions: Mapped[List[Permission]] = relationship(
+        "Permission", secondary=role_permission, back_populates="roles"
+    )
+    users: Mapped[List[User]] = relationship(
+        "User", secondary=role_user, back_populates="roles"
+    )
+
+    def __repr__(self) -> str:
+        return f"<Role id={self.id!r} name={self.name!r}>"
+
+
+class Permission(Base, UUIDMixin):
+    """A single permission (e.g. CREATE_USER)."""
+
+    __tablename__ = "permission"
+
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    module: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    roles: Mapped[List[Role]] = relationship(
+        "Role", secondary=role_permission, back_populates="permissions"
+    )
+
+    def __repr__(self) -> str:
+        return f"<Permission id={self.id!r} name={self.name!r}>"
+
+
+class AuthToken(Base, TimestampMixin):
+    """Persisted access/refresh token pair for a user."""
+
+    __tablename__ = "auth_token"
+
+    id: Mapped[str] = mapped_column(
+        String(64), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("user.id"), nullable=False
+    )
+    token: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    token_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    refresh_token_hash: Mapped[Optional[str]] = mapped_column(
+        String(255), nullable=True
+    )
+    token_type: Mapped[str] = mapped_column(
+        String(20), default="access", nullable=False
+    )
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
     @property
-    def definition(self) -> dict[str, Any]:
-        return json.loads(self.definition_json or "{}")
+    def revoked(self) -> bool:
+        return self.is_revoked
 
-    @definition.setter
-    def definition(self, value: dict[str, Any]) -> None:
-        self.definition_json = json.dumps(value)
+    @revoked.setter
+    def revoked(self, val: bool) -> None:
+        self.is_revoked = val
 
+    user: Mapped[User] = relationship("User", back_populates="auth_tokens")
 
-# ---------------------------------------------------------------------------
-# ProcessInstance
-# ---------------------------------------------------------------------------
-
-
-class ProcessInstance(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """Live execution of a ProcessTemplate for a specific case."""
-
-    __tablename__ = "process_instances"
-
-    template_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("process_templates.id"), nullable=False, index=True
-    )
-    initiated_by_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True, index=True
-    )
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=ProcessStatus.active.value
-    )
-    title: Mapped[str] = mapped_column(String(512), nullable=False)
-    context_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    result_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    research_session_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("research_sessions.id"), nullable=True
-    )
-
-    template: Mapped["ProcessTemplate"] = relationship(
-        "ProcessTemplate", back_populates="instances"
-    )
-    tasks: Mapped[list["ProcessTask"]] = relationship(
-        "ProcessTask",
-        back_populates="instance",
-        cascade="all, delete-orphan",
-        order_by="ProcessTask.position",
-    )
-    approval_requests: Mapped[list["ApprovalRequest"]] = relationship(
-        "ApprovalRequest",
-        foreign_keys="ApprovalRequest.target_id",
-        primaryjoin="and_(ApprovalRequest.target_id == ProcessInstance.id, "
-                    "ApprovalRequest.target_type == 'process_instance')",
-        cascade="all, delete-orphan",
-        overlaps="approval_requests",
-    )
-
-    @property
-    def context(self) -> dict[str, Any]:
-        return json.loads(self.context_json or "{}")
-
-    @context.setter
-    def context(self, value: dict[str, Any]) -> None:
-        self.context_json = json.dumps(value)
-
-    @property
-    def result(self) -> dict[str, Any]:
-        return json.loads(self.result_json or "{}")
-
-    @result.setter
-    def result(self, value: dict[str, Any]) -> None:
-        self.result_json = json.dumps(value)
-
-
-# ---------------------------------------------------------------------------
-# ProcessTask
-# ---------------------------------------------------------------------------
-
-
-class ProcessTask(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """One step within a ProcessInstance."""
-
-    __tablename__ = "process_tasks"
-
-    instance_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("process_instances.id"), nullable=False, index=True
-    )
-    position: Mapped[int] = mapped_column(Integer, nullable=False)
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=TaskStatus.pending.value
-    )
-    assigned_to_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
-    )
-    result_json: Mapped[str] = mapped_column(Text, default="{}", nullable=False)
-    requires_approval: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-
-    instance: Mapped["ProcessInstance"] = relationship(
-        "ProcessInstance", back_populates="tasks"
-    )
-
-    @property
-    def result(self) -> dict[str, Any]:
-        return json.loads(self.result_json or "{}")
-
-    @result.setter
-    def result(self, value: dict[str, Any]) -> None:
-        self.result_json = json.dumps(value)
-
-
-# ---------------------------------------------------------------------------
-# ApprovalRequest
-# ---------------------------------------------------------------------------
-
-
-class ApprovalRequest(UUIDPrimaryKeyMixin, TimestampMixin, Base):
-    """Gate on a potentially destructive or high-impact action."""
-
-    __tablename__ = "approval_requests"
-
-    target_type: Mapped[str] = mapped_column(String(64), nullable=False)
-    target_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
-    action: Mapped[str] = mapped_column(String(64), nullable=False)
-    requested_by_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=False, index=True
-    )
-    decided_by_id: Mapped[str | None] = mapped_column(
-        String(36), ForeignKey("users.id"), nullable=True
-    )
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, default=ApprovalStatus.pending.value
-    )
-    reason: Mapped[str | None] = mapped_column(Text, nullable=True)
-    decision_note: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    decided_by: Mapped["User | None"] = relationship(
-        "User",
-        foreign_keys=[decided_by_id],
-        back_populates="approval_decisions",
-    )
-
-    @property
-    def status_enum(self) -> ApprovalStatus:
-        return ApprovalStatus(self.status)
+    def __repr__(self) -> str:
+        return f"<AuthToken id={self.id!r} user_id={self.user_id!r} is_revoked={self.is_revoked}>"

@@ -33,10 +33,10 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P2-1 · SQLAlchemy entities and enums | `feature/sqlalchemy-entities` | Pending ❌ |
-| P2-2 · Database schema, migrations and seed data | `feature/db-schema-migrations` | Pending ❌ |
-| P2-3 · Repository layer | `feature/repository-layer` | Pending ❌ |
-| P2-4 · Bootstrap data loader and demo fixtures | `feature/demo-data-bootstrap` | Pending ❌ |
+| P2-1 · SQLAlchemy entities and enums | `feature/sqlalchemy-entities` | Completed ✅ |
+| P2-2 · Database schema, migrations and seed data | `feature/db-schema-migrations` | Completed ✅ |
+| P2-3 · Repository layer | `feature/repository-layer` | Completed ✅ |
+| P2-4 · Bootstrap data loader and demo fixtures | `feature/demo-data-bootstrap` | Completed ✅ |
 
 ---
 
@@ -47,10 +47,10 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P3-1 · JWT service and RBAC decorator | `feature/jwt-rbac` | Pending ❌ |
-| P3-2 · Auth routes and demo tokens | `feature/auth-demo-routes` | Pending ❌ |
-| P3-3 · Rate limiting (Redis sliding window) | `feature/rate-limit-redis` | Pending ❌ |
-| P3-4 · Audit middleware and middleware wiring | `feature/audit-middleware-wiring` | Pending ❌ |
+| P3-1 · JWT service and RBAC decorator | `feature/jwt-rbac` | Completed ✅ |
+| P3-2 · Auth routes and demo tokens | `feature/auth-demo-routes` | Completed ✅ |
+| P3-3 · Rate limiting (Redis sliding window) | `feature/rate-limit-redis` | Completed ✅ |
+| P3-4 · Audit middleware and middleware wiring | `feature/audit-middleware-wiring` | Completed ✅ |
 
 ---
 

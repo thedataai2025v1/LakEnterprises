@@ -1,21 +1,21 @@
 """Tests for the LakEnterprises research pipeline (Phase 1)."""
 
-from unittest.mock import MagicMock, patch
-from typing import Any
-
 import os
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from lakenterprises import pipeline
 from lakenterprises.config import Settings, get_settings
-from lakenterprises.llm import SUPPORTED_PROVIDERS, get_llm, get_embedding_model
+from lakenterprises.llm import (SUPPORTED_PROVIDERS, get_embedding_model,
+                                get_llm)
 from lakenterprises.retriever import _tokenise
-
 
 # ---------------------------------------------------------------------------
 # Response
 # ---------------------------------------------------------------------------
+
 
 class TestResponse:
     def test_create_with_minimal_args(self) -> None:
@@ -50,10 +50,12 @@ class TestResponse:
 # Settings defaults
 # ---------------------------------------------------------------------------
 
+
 class TestSettingsDefaults:
     def setup_method(self) -> None:
         from lakenterprises.config import Settings
         from tests import test_pipeline
+
         self.orig = Settings
         test_pipeline.patch_settings = None
 
@@ -86,6 +88,7 @@ class TestSettingsDefaults:
 # get_settings
 # ---------------------------------------------------------------------------
 
+
 class TestGetSettings:
     def test_returns_settings_instance(self) -> None:
         s = get_settings()
@@ -99,6 +102,7 @@ class TestGetSettings:
 # ---------------------------------------------------------------------------
 # LLM
 # ---------------------------------------------------------------------------
+
 
 class TestLLM:
     @pytest.mark.skipif(
@@ -127,6 +131,7 @@ class TestLLM:
 # Retriever helpers
 # ---------------------------------------------------------------------------
 
+
 class TestTokenise:
     def test_simple(self) -> None:
         assert _tokenise("hello world") == ["hello", "world"]
@@ -138,6 +143,7 @@ class TestTokenise:
 # ---------------------------------------------------------------------------
 # Pipeline creation
 # ---------------------------------------------------------------------------
+
 
 class TestCreatePipeline:
     def test_create_from_settings(self) -> None:
@@ -159,6 +165,7 @@ class TestCreatePipeline:
 # ---------------------------------------------------------------------------
 # get_graph output
 # ---------------------------------------------------------------------------
+
 
 class TestGraph:
     def test_has_nodes_and_edges(self) -> None:
@@ -187,6 +194,7 @@ class TestGraph:
 # Pipeline invocation
 # ---------------------------------------------------------------------------
 
+
 class TestInvoke:
     def test_basic_invoke(self) -> None:
         app = pipeline.create_research_pipeline()
@@ -203,8 +211,10 @@ class TestInvoke:
 # CANONICAL_DEMO_QUESTION
 # ---------------------------------------------------------------------------
 
+
 class TestCanonical:
     def test_demo_question_exists(self) -> None:
         from lakenterprises.__main__ import CANONICAL_DEMO_QUESTION
+
         assert isinstance(CANONICAL_DEMO_QUESTION, str)
         assert len(CANONICAL_DEMO_QUESTION) > 0

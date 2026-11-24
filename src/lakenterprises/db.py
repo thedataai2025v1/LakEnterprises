@@ -1,83 +1,69 @@
-"""Database engine factory, session management, and schema creation.
+"""Database engine, session factory and helper utilities for LakEnterprises.
 
-Responsibilities
-----------------
-- Build an SQLAlchemy ``Engine`` from ``Settings.db_url``.
-- Expose a ``SessionLocal`` factory and a ``get_db()`` dependency (FastAPI-style).
-- Provide ``create_all_tables()`` and ``drop_all_tables()`` helpers.
-- Support both real SQLite/PostgreSQL connections and an in-memory SQLite
-  engine for unit tests (``make_test_engine()``).
-
-Usage
------
-    from lakenterprises.db import get_db, create_all_tables
-
-    # FastAPI dependency
-    def my_route(db: Session = Depends(get_db)): ...
-
-    # CLI / startup
-    create_all_tables()
+Manages SQLAlchemy engine lifecycle, session creation, and database
+initialisation for the platform.  Configurable via Settings.db_url.
 """
 
 from __future__ import annotations
 
-from contextlib import contextmanager
+import logging
+from pathlib import Path
 from typing import Generator
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import create_engine
+from sqlalchemy import event as sa_event
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from .config import get_settings
-from .models import Base
+from .config import Settings
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Lazy-singleton state
+# ---------------------------------------------------------------------------
+
+_engine: Engine | None = None
+_session_factory: sessionmaker[Session] | None = None
 
 
 # ---------------------------------------------------------------------------
-# Engine construction
+# Engine
 # ---------------------------------------------------------------------------
 
 
-def make_engine(db_url: str | None = None, **kwargs) -> Engine:
-    """Create an SQLAlchemy engine.
+def get_engine() -> Engine:
+    """Return (and create on first call) the SQLAlchemy engine.
 
-    Args:
-        db_url: Override the URL from ``Settings``. Defaults to
-                ``settings.db_url`` (SQLite at ``data/enterprise.db``).
-        **kwargs: Extra keyword arguments forwarded to ``create_engine``.
-
-    Returns:
-        A configured ``Engine`` instance.
+    Uses the database URL from ``Settings``.  For SQLite back-ends WAL
+    journal mode and foreign-key enforcement are applied via an event
+    listener.
     """
-    url = db_url or get_settings().db_url
-
-    # SQLite-specific pragmas for safe concurrent access
-    if url.startswith("sqlite"):
-        connect_args = kwargs.pop("connect_args", {"check_same_thread": False})
-        engine = create_engine(
+    global _engine
+    if _engine is None:
+        url = Settings().db_url
+        # Ensure the directory for the SQLite file exists.
+        if url.startswith("sqlite:///"):
+            db_file = url.removeprefix("sqlite:///")
+            Path(db_file).parent.mkdir(parents=True, exist_ok=True)
+        logger.info("Creating database engine for %s", url)
+        _engine = create_engine(
             url,
-            connect_args=connect_args,
-            **kwargs,
+            echo=False,
+            pool_pre_ping=True,
         )
-        # Enable WAL mode and foreign-key enforcement for every connection
-        with engine.connect() as conn:
-            conn.execute(text("PRAGMA journal_mode=WAL"))
-            conn.execute(text("PRAGMA foreign_keys=ON"))
-        return engine
-
-    return create_engine(url, **kwargs)
+        _configure_sqlite(_engine)
+    return _engine
 
 
-def make_test_engine() -> Engine:
-    """Return an in-memory SQLite engine for unit tests.
+def _configure_sqlite(engine: Engine) -> None:
+    """Apply SQLite-specific optimisations (WAL journal)."""
 
-    Uses ``StaticPool`` so the same in-memory DB is shared across all
-    connections created by the test session factory.
-    """
-    return create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    @sa_event.listens_for(engine, "connect")
+    def _on_connect(dbapi_conn: any, connection_record: any) -> None:  # noqa: ANN401
+        cursor = dbapi_conn.cursor()
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.close()
 
 
 # ---------------------------------------------------------------------------
@@ -85,90 +71,122 @@ def make_test_engine() -> Engine:
 # ---------------------------------------------------------------------------
 
 
-def make_session_factory(engine: Engine) -> sessionmaker[Session]:
-    """Return a ``sessionmaker`` bound to the given engine."""
-    return sessionmaker(
-        bind=engine,
-        autocommit=False,
-        autoflush=False,
-        expire_on_commit=False,
-    )
+def get_session_factory() -> sessionmaker[Session]:
+    """Return (and create on first call) the ``sessionmaker`` bound to the engine."""
+    global _session_factory
+    if _session_factory is None:
+        engine = get_engine()
+        _session_factory = sessionmaker(
+            bind=engine,
+            expire_on_commit=False,
+        )
+    return _session_factory
 
 
 # ---------------------------------------------------------------------------
-# Module-level singletons (lazy – not created until first use)
-# ---------------------------------------------------------------------------
-
-_engine: Engine | None = None
-_SessionLocal: sessionmaker[Session] | None = None
-
-
-def _get_engine() -> Engine:
-    global _engine
-    if _engine is None:
-        _engine = make_engine()
-    return _engine
-
-
-def _get_session_factory() -> sessionmaker[Session]:
-    global _SessionLocal
-    if _SessionLocal is None:
-        _SessionLocal = make_session_factory(_get_engine())
-    return _SessionLocal
-
-
-# ---------------------------------------------------------------------------
-# Public helpers
+# Session helpers
 # ---------------------------------------------------------------------------
 
 
-def get_db() -> Generator[Session, None, None]:
-    """Yield a database session and ensure it is closed afterwards.
+def get_db_session() -> Session:
+    """Create and return a *new* database session (caller is responsible for closing)."""
+    factory = get_session_factory()
+    return factory()
 
-    Designed for use as a FastAPI ``Depends`` dependency *or* inside a
-    ``with`` statement in scripts / tests.
 
-    Example::
+def session_scope() -> Generator[Session, None, None]:
+    """Context-manager that yields a session and rolls back on exception.
 
-        # As a FastAPI dependency
-        def route(db: Session = Depends(get_db)):
-            ...
+    Usage::
 
-        # As a context manager
-        with contextlib.contextmanager(get_db)() as db:
-            ...
+        with session_scope() as session:
+            session.add(entity)
     """
-    db = _get_session_factory()()
+    session: Session = get_db_session()
     try:
-        yield db
-        db.commit()
+        yield session
+        session.commit()
     except Exception:
-        db.rollback()
+        session.rollback()
         raise
     finally:
-        db.close()
+        session.close()
 
 
-@contextmanager
-def db_session() -> Generator[Session, None, None]:
-    """Context-manager wrapper around ``get_db()`` for non-FastAPI callers."""
-    yield from get_db()
+# ---------------------------------------------------------------------------
+# Database initialisation
+# ---------------------------------------------------------------------------
 
 
-def create_all_tables(engine: Engine | None = None) -> None:
-    """Create all ORM-mapped tables (safe to call repeatedly: ``CREATE TABLE IF NOT EXISTS``)."""
-    eng = engine or _get_engine()
-    Base.metadata.create_all(bind=eng)
+def init_db() -> None:
+    """Create all tables defined by the ORM models.
+
+    Ensures every entity class is imported (so its metadata is registered
+    with ``Base``) before calling ``Base.metadata.create_all()``.
+    """
+    engine = get_engine()
+
+    # Force registration of all entity classes with Base.metadata.
+    # Importing the module is sufficient – the class bodies execute
+    # the DeclarativeBase machinery at definition time.
+    from .models.entities import (AuditLog, AuthToken, Document,  # noqa: F401
+                                  DocumentChunk, Permission, ResearchSession,
+                                  ResearchSubQuestion, Role, User,
+                                  WorkflowEvent)
+
+    logger.info("Creating all database tables")
+    Base.metadata.create_all(engine)
+    logger.info("Database tables created/verified")
 
 
-def drop_all_tables(engine: Engine | None = None) -> None:
-    """Drop all ORM-mapped tables (destructive – for tests only)."""
-    eng = engine or _get_engine()
-    Base.metadata.drop_all(bind=eng)
+def reset_db() -> None:
+    """Drop *all* tables and recreate them.
+
+    **Warning:** this permanently destroys all stored data.
+    """
+    engine = get_engine()
+
+    from .models.entities import (AuditLog, AuthToken, Document,  # noqa: F401
+                                  DocumentChunk, Permission, ResearchSession,
+                                  ResearchSubQuestion, Role, User,
+                                  WorkflowEvent)
+
+    logger.info("Dropping all database tables")
+    Base.metadata.drop_all(engine)
+    init_db()
 
 
-def reset_engine(engine: Engine | None = None, session_factory: sessionmaker | None = None) -> None:
-    """Replace the module-level engine and session factory (for testing)."""
-    global _engine, _SessionLocal
-    _engine = engine
-    _SessionLocal = session_factory
+# ---------------------------------------------------------------------------
+# Convenience helpers
+# ---------------------------------------------------------------------------
+
+
+def get_db_path() -> str:
+    """Return the file-system path to the database.
+
+    For non-SQLite back-ends this returns the full connection string
+    as provided by the Settings.
+    """
+    return str(Settings().db_path)
+
+
+# ---------------------------------------------------------------------------
+# Import Base here for public use and type hints
+# ---------------------------------------------------------------------------
+
+from .models.base import Base  # noqa: E402, F401
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+__all__ = [
+    "Base",
+    "get_engine",
+    "get_session_factory",
+    "get_db_session",
+    "session_scope",
+    "init_db",
+    "reset_db",
+    "get_db_path",
+]

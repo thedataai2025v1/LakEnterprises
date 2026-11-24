@@ -19,12 +19,10 @@ Usage
 
 from __future__ import annotations
 
-import math
-import re
-import string
 import logging
+import math
+import string
 from collections import Counter
-from pathlib import Path
 from typing import Any, Callable, Optional
 
 logger = logging.getLogger(__name__)
@@ -122,11 +120,13 @@ class _BM25Index:
 
         results: list[dict[str, Any]] = []
         for rank, (score, doc_index) in enumerate(scores[:top_k], start=1):
-            results.append({
-                "rank": rank,
-                "score": score,
-                "doc_index": doc_index,
-            })
+            results.append(
+                {
+                    "rank": rank,
+                    "score": score,
+                    "doc_index": doc_index,
+                }
+            )
         return results
 
     # ------------------------------------------------------------------
@@ -159,9 +159,7 @@ class _BM25Index:
 
         self._idf = {}
         for term, df in doc_freq.items():
-            self._idf[term] = math.log(
-                (n_docs - df + 0.5) / (df + 0.5) + 1
-            )
+            self._idf[term] = math.log((n_docs - df + 0.5) / (df + 0.5) + 1)
 
     def _score(
         self,
@@ -301,8 +299,8 @@ class HybridRetriever:
 
         if not semantic_results and not bm25_results:
             logger.warning(
-                "Both semantic and BM25 searches returned no results for "
-                "query: %s", query[:100]
+                "Both semantic and BM25 searches returned no results for " "query: %s",
+                query[:100],
             )
             return []
 
@@ -348,10 +346,12 @@ class HybridRetriever:
             self._metadata.extend(metadata)
         else:
             for i in range(len(texts)):
-                self._metadata.append({
-                    "id": f"doc-{start_idx + i}",
-                    "source": "unknown",
-                })
+                self._metadata.append(
+                    {
+                        "id": f"doc-{start_idx + i}",
+                        "source": "unknown",
+                    }
+                )
 
         # Add to BM25 index
         self._bm25.add(texts)
@@ -386,9 +386,7 @@ class HybridRetriever:
         configured.
         """
         if self.vectorstore is None:
-            logger.debug(
-                "No vector store configured; semantic search skipped"
-            )
+            logger.debug("No vector store configured; semantic search skipped")
             return []
 
         try:
@@ -410,14 +408,16 @@ class HybridRetriever:
             text = getattr(doc, "page_content", str(doc))
             meta = getattr(doc, "metadata", {})
 
-            results.append({
-                "text": text,
-                "score": 1.0 / rank,  # Initial placeholder; RRF will re-score
-                "source": meta.get("source", "unknown"),
-                "strategy": "semantic",
-                "rank": rank,
-                "_raw_score": meta.get("score", 1.0 / rank),
-            })
+            results.append(
+                {
+                    "text": text,
+                    "score": 1.0 / rank,  # Initial placeholder; RRF will re-score
+                    "source": meta.get("source", "unknown"),
+                    "strategy": "semantic",
+                    "rank": rank,
+                    "_raw_score": meta.get("score", 1.0 / rank),
+                }
+            )
 
         logger.debug("Semantic search returned %d results", len(results))
         return results
@@ -443,17 +443,21 @@ class HybridRetriever:
         results: list[dict[str, Any]] = []
         for item in raw_results:
             doc_index = item["doc_index"]
-            text = self._documents[doc_index] if doc_index < len(self._documents) else ""
+            text = (
+                self._documents[doc_index] if doc_index < len(self._documents) else ""
+            )
             meta = self._metadata[doc_index] if doc_index < len(self._metadata) else {}
 
-            results.append({
-                "text": text,
-                "score": item["score"],
-                "source": meta.get("source", "unknown"),
-                "strategy": "bm25",
-                "rank": item["rank"],
-                "_raw_score": item["score"],
-            })
+            results.append(
+                {
+                    "text": text,
+                    "score": item["score"],
+                    "source": meta.get("source", "unknown"),
+                    "strategy": "bm25",
+                    "rank": item["rank"],
+                    "_raw_score": item["score"],
+                }
+            )
 
         logger.debug("BM25 search returned %d results", len(results))
         return results
@@ -509,9 +513,7 @@ class HybridRetriever:
                 else:
                     cached = dict(item)
                     cached["strategy"] = (
-                        "hybrid"
-                        if text in result_cache
-                        else strategy_tag
+                        "hybrid" if text in result_cache else strategy_tag
                     )
                     result_cache[text] = cached
 

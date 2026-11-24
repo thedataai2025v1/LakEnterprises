@@ -30,3 +30,15 @@ wheels/
 .env
 .env.*
 !.env.example
+
+
+# Test & coverage caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases and logs
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+*.log

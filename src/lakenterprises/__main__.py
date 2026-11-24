@@ -19,9 +19,8 @@ serve     Start a FastAPI server (Phase 3 stub).
 import argparse
 import logging
 import sys
-from typing import NoReturn
 
-from .config import Settings, setup_logging, get_settings
+from .config import Settings, get_settings, setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -173,13 +172,13 @@ def _cmd_validate(_args: argparse.Namespace, settings: Settings) -> None:
         if not settings.azure_openai_endpoint:
             issues.append("AZURE_OPENAI_ENDPOINT is not set")
         else:
-            print(f"  [OK]   AZURE_OPENAI_ENDPOINT")
+            print("  [OK]   AZURE_OPENAI_ENDPOINT")
 
     if provider == "watsonx":
         if not settings.watsonx_url:
             issues.append("WATSONX_URL is not set")
         else:
-            print(f"  [OK]   WATSONX_URL")
+            print("  [OK]   WATSONX_URL")
 
     if provider == "ollama":
         print(f"  [INFO] Ollama base URL: {settings.ollama_base_url}")
@@ -194,7 +193,7 @@ def _cmd_validate(_args: argparse.Namespace, settings: Settings) -> None:
 
         pwd = os.environ.get("GRAPH_PASSWORD", "")
         if pwd:
-            print(f"  [OK]   GRAPH_PASSWORD")
+            print("  [OK]   GRAPH_PASSWORD")
         else:
             issues.append("GRAPH_PASSWORD is not set (required for Neo4j)")
 
@@ -227,7 +226,7 @@ def _cmd_validate(_args: argparse.Namespace, settings: Settings) -> None:
         for issue in issues:
             print(f"  [FAIL] {issue}")
     else:
-        print(f"\n  No configuration issues found.")
+        print("\n  No configuration issues found.")
 
     if warnings:
         print(f"\n{'='*50}")
@@ -239,7 +238,10 @@ def _cmd_validate(_args: argparse.Namespace, settings: Settings) -> None:
     print()
 
     if issues:
-        print(f"Configuration validation FAILED with {len(issues)} issue(s).", file=sys.stderr)
+        print(
+            f"Configuration validation FAILED with {len(issues)} issue(s).",
+            file=sys.stderr,
+        )
         sys.exit(1)
     else:
         print("Configuration validation PASSED.")
@@ -258,9 +260,14 @@ def _check(label: str, value: str, issues: list[str]) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _cmd_serve(_args: argparse.Namespace, _settings: Settings) -> None:
-    """Start the FastAPI server (stub)."""
-    print("Server mode coming in Phase 3")
+def _cmd_serve(args: argparse.Namespace, _settings: Settings) -> None:
+    """Start the FastAPI server."""
+    import uvicorn
+
+    host = getattr(args, "host", "0.0.0.0")
+    port = getattr(args, "port", 8001)
+    print(f"Starting LakEnterprises API server on {host}:{port}")
+    uvicorn.run("lakenterprises.app:app", host=host, port=port, reload=False)
 
 
 # ---------------------------------------------------------------------------
@@ -328,10 +335,21 @@ def _build_parser() -> argparse.ArgumentParser:
     )
 
     # ── serve ──────────────────────────────────────────────────────────
-    subparsers.add_parser(
+    serve_parser = subparsers.add_parser(
         "serve",
-        help="Start FastAPI server (Phase 3 stub)",
-        description="Start the API server. Currently a stub; coming in Phase 3.",
+        help="Start FastAPI server",
+        description="Start the FastAPI API server on the configured host and port.",
+    )
+    serve_parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host to bind to (default: 0.0.0.0).",
+    )
+    serve_parser.add_argument(
+        "--port",
+        type=int,
+        default=8001,
+        help="Port to listen on (default: 8001).",
     )
 
     return parser
