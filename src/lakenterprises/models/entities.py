@@ -379,3 +379,31 @@ class ApprovalRequest(Base, UUIDMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<ApprovalRequest id={self.id!r} action={self.action!r} status={self.status!r}>"
+
+
+class ProcessMemory(Base, UUIDMixin, TimestampMixin):
+    """Durable long-term memory entity across processes, entities, and workflows."""
+
+    __tablename__ = "process_memory"
+
+    entity_type: Mapped[str] = mapped_column(
+        String(50), nullable=False, index=True
+    )  # e.g., 'process', 'customer', 'vendor', 'system', 'incident'
+    entity_id: Mapped[str] = mapped_column(
+        String(255), nullable=False, index=True
+    )  # e.g., 'PROC-101', 'CUST-9001'
+    memory_type: Mapped[str] = mapped_column(
+        String(50), default="fact", nullable=False
+    )  # e.g., 'fact', 'preference', 'decision', 'summary', 'learning'
+    key: Mapped[str] = mapped_column(
+        String(255), nullable=False, index=True
+    )  # unique identifier or topic within entity scope
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    metadata_: Mapped[Optional[dict]] = mapped_column("metadata", JSON, nullable=True)
+    importance: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+
+    def __repr__(self) -> str:
+        return (
+            f"<ProcessMemory id={self.id!r} entity={self.entity_type}:{self.entity_id} "
+            f"type={self.memory_type!r} key={self.key!r}>"
+        )

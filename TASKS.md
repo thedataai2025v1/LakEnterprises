@@ -117,9 +117,9 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P8-1 · Short-term session store (Redis) | `feature/memory-short-term-redis` | Pending ❌ |
-| P8-2 · Long-term process memory store | `feature/memory-long-term` | Pending ❌ |
-| P8-3 · Memory recall and write-back service | `feature/memory-recall-service` | Pending ❌ |
+| P8-1 · Short-term session store (Redis) | `feature/memory-short-term-redis` | Completed ✅ |
+| P8-2 · Long-term process memory store | `feature/memory-long-term` | Completed ✅ |
+| P8-3 · Memory recall and write-back service | `feature/memory-recall-service` | Completed ✅ |
 
 ---
 
