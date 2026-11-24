@@ -405,8 +405,12 @@ class HybridRetriever:
 
         results: list[dict[str, Any]] = []
         for rank, doc in enumerate(raw_results, start=1):
-            text = getattr(doc, "page_content", str(doc))
-            meta = getattr(doc, "metadata", {})
+            if isinstance(doc, dict):
+                text = doc.get("text") or doc.get("page_content") or str(doc)
+                meta = doc.get("metadata") or {}
+            else:
+                text = getattr(doc, "page_content", getattr(doc, "text", str(doc)))
+                meta = getattr(doc, "metadata", {})
 
             results.append(
                 {

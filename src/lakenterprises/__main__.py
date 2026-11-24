@@ -270,6 +270,47 @@ def _cmd_serve(args: argparse.Namespace, _settings: Settings) -> None:
     uvicorn.run("lakenterprises.app:app", host=host, port=port, reload=False)
 
 
+def _cmd_ingest(args: argparse.Namespace, _settings: Settings) -> None:
+    """Ingest a document or directory of documents."""
+    from pathlib import Path
+
+    from lakenterprises.services.document import DocumentService
+
+    path = Path(args.path)
+    if not path.exists():
+        print(f"Error: path '{path}' does not exist.", file=sys.stderr)
+        sys.exit(1)
+
+    service = DocumentService()
+    files = (
+        [path]
+        if path.is_file()
+        else sorted([p for p in path.glob("**/*") if p.is_file()])
+    )
+
+    if not files:
+        print(f"No files found to ingest in {path}.")
+        return
+
+    print(f"Ingesting {len(files)} file(s)...")
+    total_chunks = 0
+    for f in files:
+        try:
+            doc_name = args.name if (len(files) == 1 and args.name) else f.name
+            doc, chunks = service.ingest_file(
+                f,
+                name=doc_name,
+                chunk_size=args.chunk_size,
+                chunk_overlap=args.chunk_overlap,
+            )
+            total_chunks += len(chunks)
+            print(f"  [OK] Ingested '{doc.name}' (ID: {doc.id}, {len(chunks)} chunks)")
+        except Exception as exc:
+            print(f"  [FAIL] Failed to ingest '{f.name}': {exc}", file=sys.stderr)
+
+    print(f"Done. Ingested {len(files)} document(s) with {total_chunks} total chunks.")
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -352,6 +393,34 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Port to listen on (default: 8001).",
     )
 
+    # ── ingest ─────────────────────────────────────────────────────────
+    ingest_parser = subparsers.add_parser(
+        "ingest",
+        help="Ingest and chunk documents into the knowledge base",
+        description="Ingest files, split into chunks, persist to DB, and index into vector store.",
+    )
+    ingest_parser.add_argument(
+        "path",
+        help="File or directory path to ingest.",
+    )
+    ingest_parser.add_argument(
+        "--name",
+        default=None,
+        help="Document name (applies only when ingesting a single file).",
+    )
+    ingest_parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=500,
+        help="Target chunk size in characters (default: 500).",
+    )
+    ingest_parser.add_argument(
+        "--chunk-overlap",
+        type=int,
+        default=50,
+        help="Chunk overlap in characters (default: 50).",
+    )
+
     return parser
 
 
@@ -393,6 +462,9 @@ def main(argv: list[str] | None = None) -> None:
 
     elif command == "serve":
         _cmd_serve(args, settings)
+
+    elif command == "ingest":
+        _cmd_ingest(args, settings)
 
     else:
         parser.print_help()

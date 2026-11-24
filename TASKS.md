@@ -61,10 +61,10 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P4-1 · Document ingestion and chunking | `feature/doc-ingestion-chunking` | Pending ❌ |
-| P4-2 · Vector store and embedding service | `feature/doc-vector-embeddings` | Pending ❌ |
-| P4-3 · Hybrid retriever (vector + keyword) | `feature/doc-hybrid-retriever` | Pending ❌ |
-| P4-4 · Document API and ingestion CLI | `feature/doc-ingest-api-cli` | Pending ❌ |
+| P4-1 · Document ingestion and chunking | `feature/doc-ingestion-chunking` | Completed ✅ |
+| P4-2 · Vector store and embedding service | `feature/doc-vector-embeddings` | Completed ✅ |
+| P4-3 · Hybrid retriever (vector + keyword) | `feature/doc-hybrid-retriever` | Completed ✅ |
+| P4-4 · Document API and ingestion CLI | `feature/doc-ingest-api-cli` | Completed ✅ |
 
 ---
 

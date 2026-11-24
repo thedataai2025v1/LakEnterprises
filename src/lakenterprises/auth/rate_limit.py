@@ -78,7 +78,8 @@ class SlidingWindowRateLimiter:
         pipe = self._redis.pipeline()
         pipe.zremrangebyscore(redis_key, 0, clear_before)
         pipe.zcard(redis_key)
-        pipe.zadd(redis_key, {str(now): now})
+        member = f"{now}:{time.perf_counter_ns()}"
+        pipe.zadd(redis_key, {member: now})
         pipe.expire(redis_key, window + 1)
         results = pipe.execute()
 

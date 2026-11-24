@@ -14,8 +14,9 @@ from typing import List, Optional
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from lakenterprises.models.entities import (AuditLog, AuthToken, DocumentChunk,
-                                            Permission, Role, User)
+from lakenterprises.models.entities import (AuditLog, AuthToken, Document,
+                                            DocumentChunk, Permission, Role,
+                                            User)
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,13 @@ class UserRepository:
         self.db.delete(user)
         self.db.flush()
         return True
+
+    def assign_role(self, user_id: str, role: Role) -> Optional[User]:
+        user = self.get_by_id(user_id)
+        if user and role not in user.roles:
+            user.roles.append(role)
+            self.db.flush()
+        return user
 
     def get_by_role_name(self, role_name: str) -> List[User]:
         return (
@@ -405,6 +413,95 @@ class AuthTokenRepository:
 
 
 # ---------------------------------------------------------------------------
+# Document
+# ---------------------------------------------------------------------------
+
+
+class DocumentRepository:
+    """Repository for the :class:`Document` entity."""
+
+    def __init__(self, db: Session) -> None:
+        self.db = db
+
+    def create(
+        self,
+        *,
+        name: str,
+        content: Optional[str] = None,
+        source_url: Optional[str] = None,
+        metadata: Optional[dict] = None,
+        id: Optional[str] = None,
+    ) -> Document:
+        import uuid as _uuid
+
+        doc_id = id or str(_uuid.uuid4())
+        doc = Document(
+            id=doc_id,
+            name=name,
+            content=content,
+            source_url=source_url,
+            metadata_=metadata,
+        )
+        self.db.add(doc)
+        self.db.flush()
+        return doc
+
+    def get_by_id(self, document_id: str) -> Optional[Document]:
+        return self.db.get(Document, document_id)
+
+    def get_by_name(self, name: str) -> Optional[Document]:
+        return self.db.execute(
+            select(Document).where(Document.name == name)
+        ).scalar_one_or_none()
+
+    def get_all(self, limit: int = 100, offset: int = 0) -> List[Document]:
+        return (
+            self.db.execute(
+                select(Document)
+                .order_by(Document.created_at.desc())
+                .limit(limit)
+                .offset(offset)
+            )
+            .scalars()
+            .all()
+        )
+
+    def update(
+        self,
+        document_id: str,
+        *,
+        name: Optional[str] = None,
+        content: Optional[str] = None,
+        source_url: Optional[str] = None,
+        metadata: Optional[dict] = None,
+    ) -> Optional[Document]:
+        doc = self.db.get(Document, document_id)
+        if doc is None:
+            return None
+        if name is not None:
+            doc.name = name
+        if content is not None:
+            doc.content = content
+        if source_url is not None:
+            doc.source_url = source_url
+        if metadata is not None:
+            doc.metadata_ = metadata
+        self.db.flush()
+        return doc
+
+    def delete(self, document_id: str) -> bool:
+        doc = self.db.get(Document, document_id)
+        if doc is None:
+            return False
+        self.db.delete(doc)
+        self.db.flush()
+        return True
+
+    def count(self) -> int:
+        return len(self.db.execute(select(Document.id)).scalars().all())
+
+
+# ---------------------------------------------------------------------------
 # DocumentChunk
 # ---------------------------------------------------------------------------
 
@@ -501,6 +598,15 @@ class DocumentChunkRepository:
         self.db.delete(chunk)
         self.db.flush()
         return True
+
+    def delete_by_document_id(self, document_id: str) -> int:
+        chunks = self.get_by_document_id(document_id)
+        count = 0
+        for chunk in chunks:
+            self.db.delete(chunk)
+            count += 1
+        self.db.flush()
+        return count
 
     def search_by_keywords(self, keywords: str) -> List[DocumentChunk]:
         """Return chunks whose *content* contains all given space-separated keywords.

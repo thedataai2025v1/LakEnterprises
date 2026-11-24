@@ -129,10 +129,7 @@ def init_db() -> None:
     # Force registration of all entity classes with Base.metadata.
     # Importing the module is sufficient – the class bodies execute
     # the DeclarativeBase machinery at definition time.
-    from .models.entities import (AuditLog, AuthToken, Document,  # noqa: F401
-                                  DocumentChunk, Permission, ResearchSession,
-                                  ResearchSubQuestion, Role, User,
-                                  WorkflowEvent)
+    from .models import entities as _entities  # noqa: F401
 
     logger.info("Creating all database tables")
     Base.metadata.create_all(engine)
@@ -144,12 +141,13 @@ def reset_db() -> None:
 
     **Warning:** this permanently destroys all stored data.
     """
-    engine = get_engine()
+    from sqlalchemy.orm import close_all_sessions
 
-    from .models.entities import (AuditLog, AuthToken, Document,  # noqa: F401
-                                  DocumentChunk, Permission, ResearchSession,
-                                  ResearchSubQuestion, Role, User,
-                                  WorkflowEvent)
+    close_all_sessions()
+    engine = get_engine()
+    engine.dispose()
+
+    from .models import entities as _entities  # noqa: F401
 
     logger.info("Dropping all database tables")
     Base.metadata.drop_all(engine)
