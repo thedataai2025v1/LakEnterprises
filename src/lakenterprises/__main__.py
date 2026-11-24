@@ -734,6 +734,79 @@ def _cmd_memory(args: argparse.Namespace, settings: Settings) -> None:
         print()
 
 
+def _cmd_agents(args: argparse.Namespace, settings: Settings) -> None:
+    """Handle the 'agent' command group."""
+    from lakenterprises.agents import (
+        BENCHMARK_SCENARIOS,
+        AgentRole,
+        AgentTask,
+        ComplianceAgent,
+        DocumentAnalysisAgent,
+        EscalationHandoffAgent,
+        KnowledgeRetrievalAgent,
+        ResponseDraftingAgent,
+        SupervisorAgent,
+        evaluate_scenario,
+    )
+
+    action = getattr(args, "agent_action", "eval")
+
+    if action == "eval":
+        print("\nRunning Specialist Agent Benchmark Scenarios:")
+        print("=" * 60)
+        agents_map = {
+            AgentRole.SUPERVISOR: SupervisorAgent(),
+            AgentRole.DOCUMENT_ANALYST: DocumentAnalysisAgent(),
+            AgentRole.COMPLIANCE: ComplianceAgent(),
+            AgentRole.KNOWLEDGE_RETRIEVER: KnowledgeRetrievalAgent(),
+            AgentRole.RESPONSE_DRAFTER: ResponseDraftingAgent(),
+            AgentRole.ESCALATION_HANDOFF: EscalationHandoffAgent(),
+        }
+        passed_count = 0
+        for scenario in BENCHMARK_SCENARIOS:
+            agent = agents_map.get(scenario.target_role)
+            eval_res = evaluate_scenario(agent, scenario)
+            status_symbol = "✅ PASS" if eval_res["passed"] else "❌ FAIL"
+            if eval_res["passed"]:
+                passed_count += 1
+            print(
+                f"{status_symbol} | {scenario.id} | {scenario.title} "
+                f"({eval_res['latency_ms']:.1f}ms)"
+            )
+            if not eval_res["passed"]:
+                for f in eval_res.get("failures", []):
+                    print(f"       - {f}")
+        print(f"\nBenchmark Result: {passed_count}/{len(BENCHMARK_SCENARIOS)} passed.\n")
+
+    elif action == "run":
+        role_str = getattr(args, "role", "supervisor") or "supervisor"
+        instruction = getattr(args, "instruction", "") or ""
+        agents_map = {
+            "supervisor": SupervisorAgent(),
+            "document_analyst": DocumentAnalysisAgent(),
+            "compliance": ComplianceAgent(),
+            "knowledge_retriever": KnowledgeRetrievalAgent(),
+            "response_drafter": ResponseDraftingAgent(),
+            "escalation_handoff": EscalationHandoffAgent(),
+        }
+        agent = agents_map.get(role_str)
+        if not agent:
+            print(f"Unknown agent role '{role_str}'", file=sys.stderr)
+            sys.exit(1)
+        task = AgentTask(
+            role=agent.role,
+            instruction=instruction,
+            parameters={"amount": float(getattr(args, "amount", 0.0) or 0.0)},
+        )
+        res = agent.run(task)
+        print(f"\nAgent Execution Result [{agent.name}]:")
+        print("=" * 60)
+        print(f"Status:     {res.status.value}")
+        print(f"Confidence: {res.confidence_score}")
+        print(f"Output:     {json.dumps(res.output_data, indent=2)}")
+        print()
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -998,6 +1071,44 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Search query for memory recall or query.",
     )
 
+    # ── agent ──────────────────────────────────────────────────────────
+    agent_parser = subparsers.add_parser(
+        "agent",
+        help="Execute and evaluate Phase 9 specialist agents",
+        description="Run individual specialist agents or run benchmark evaluations.",
+    )
+    agent_parser.add_argument(
+        "agent_action",
+        choices=["eval", "run"],
+        default="eval",
+        nargs="?",
+        help="Action to execute ('eval' or 'run').",
+    )
+    agent_parser.add_argument(
+        "--role",
+        choices=[
+            "supervisor",
+            "document_analyst",
+            "compliance",
+            "knowledge_retriever",
+            "response_drafter",
+            "escalation_handoff",
+        ],
+        default="supervisor",
+        help="Specialist agent role for 'run'.",
+    )
+    agent_parser.add_argument(
+        "--instruction",
+        default="Perform standard evaluation",
+        help="Instruction prompt for specialist agent.",
+    )
+    agent_parser.add_argument(
+        "--amount",
+        type=float,
+        default=0.0,
+        help="Transaction amount parameter for compliance check.",
+    )
+
     return parser
 
 
@@ -1054,6 +1165,9 @@ def main(argv: list[str] | None = None) -> None:
 
     elif command == "memory":
         _cmd_memory(args, settings)
+
+    elif command == "agent":
+        _cmd_agents(args, settings)
 
     else:
         parser.print_help()
