@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api-client';
 import { ProcessInstance, ProcessTemplate } from '@/types/api';
-import { Workflow, Plus, Filter, RefreshCw, ArrowRight } from 'lucide-react';
+import { Workflow, Plus, Filter, RefreshCw, ArrowRight, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ProcessesPage() {
   const [processes, setProcesses] = useState<ProcessInstance[]>([]);
@@ -59,12 +60,13 @@ export default function ProcessesPage() {
                 <th className="py-3 px-4">Current Step</th>
                 <th className="py-3 px-4">Initiator</th>
                 <th className="py-3 px-4">Created Date</th>
+                <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {processes.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400">
+                  <td colSpan={6} className="py-8 text-center text-slate-400">
                     No process instances found.
                   </td>
                 </tr>
@@ -72,7 +74,13 @@ export default function ProcessesPage() {
                 processes.map((proc) => (
                   <tr key={proc.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3.5 px-4">
-                      <p className="font-semibold text-slate-900">{proc.title || 'Enterprise Process'}</p>
+                      <Link
+                        href={`/processes/${proc.id}`}
+                        className="font-semibold text-slate-900 hover:text-sky-600 flex items-center gap-1.5"
+                      >
+                        {proc.title || 'Enterprise Process'}
+                        <ExternalLink className="w-3.5 h-3.5 opacity-60" />
+                      </Link>
                       <p className="text-xs text-slate-400 font-mono mt-0.5">{proc.id}</p>
                     </td>
                     <td className="py-3.5 px-4">
@@ -93,6 +101,14 @@ export default function ProcessesPage() {
                     </td>
                     <td className="py-3.5 px-4 text-slate-400 text-xs">
                       {proc.created_at ? new Date(proc.created_at).toLocaleString() : 'Just now'}
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <Link
+                        href={`/processes/${proc.id}`}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded text-xs font-semibold transition-colors"
+                      >
+                        Open Graph <ArrowRight className="w-3 h-3" />
+                      </Link>
                     </td>
                   </tr>
                 ))

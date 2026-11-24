@@ -193,10 +193,10 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P13-1 · Process detail and timeline layout | `feature/frontend-process-layout` | Pending ❌ |
-| P13-2 · Workflow steps panel with polling | `feature/frontend-workflow-panel` | Pending ❌ |
-| P13-3 · Approve, reject, escalate actions UI | `feature/frontend-process-actions` | Pending ❌ |
-| P13-4 · Frontend integration tests | `feature/frontend-integration-tests` | Pending ❌ |
+| P13-1 · Process detail and timeline layout | `feature/frontend-process-layout` | Completed ✅ |
+| P13-2 · Workflow steps panel with polling | `feature/frontend-workflow-panel` | Completed ✅ |
+| P13-3 · Approve, reject, escalate actions UI | `feature/frontend-process-actions` | Completed ✅ |
+| P13-4 · Frontend integration tests | `feature/frontend-integration-tests` | Completed ✅ |
 
 ---
 

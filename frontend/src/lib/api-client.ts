@@ -13,6 +13,9 @@ import type {
   DocumentMetadata,
   SearchResult,
   WorkflowState,
+  WorkflowTraceEvent,
+  WorkflowCheckpoint,
+  WorkflowSLAMetrics,
 } from '../types/api.ts';
 
 export class ApiError extends Error {
@@ -168,10 +171,50 @@ export class LakApiClient {
     return this.request<WorkflowState>(`/api/v1/workflow/${processId}/state`);
   }
 
+  async getWorkflowEvents(processId: string): Promise<WorkflowTraceEvent[]> {
+    return this.request<WorkflowTraceEvent[]>(`/api/v1/workflow/${processId}/events`);
+  }
+
+  async getWorkflowCheckpoints(processId: string): Promise<WorkflowCheckpoint[]> {
+    return this.request<WorkflowCheckpoint[]>(`/api/v1/workflow/${processId}/checkpoints`);
+  }
+
+  async getWorkflowSLA(processId: string): Promise<WorkflowSLAMetrics> {
+    return this.request<WorkflowSLAMetrics>(`/api/v1/workflow/${processId}/sla`);
+  }
+
   async resumeWorkflow(processId: string, payload: Record<string, any> = {}): Promise<any> {
     return this.request(`/api/v1/workflow/${processId}/resume`, {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  }
+
+  async decideWorkflowApproval(
+    processId: string,
+    decision: 'APPROVED' | 'REJECTED' | 'ESCALATED',
+    notes?: string
+  ): Promise<any> {
+    return this.request(`/api/v1/workflow/${processId}/decide`, {
+      method: 'POST',
+      body: JSON.stringify({ decision, notes }),
+    });
+  }
+
+  async runWorkflow(
+    title: string,
+    instruction: string,
+    amount: number = 5000.0,
+    processId?: string
+  ): Promise<WorkflowState> {
+    return this.request<WorkflowState>('/api/v1/workflow/run', {
+      method: 'POST',
+      body: JSON.stringify({
+        process_id: processId,
+        title,
+        instruction,
+        initial_context: { amount },
+      }),
     });
   }
 }
