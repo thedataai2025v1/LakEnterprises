@@ -207,8 +207,8 @@ Sub-tasks in the same phase that do not share files can be open at the same time
 
 | Task | Branch | Status |
 |------|--------|--------|
-| P14-1 · Rate limiting, CORS, and security headers | `feature/prod-security-headers` | Pending ❌ |
-| P14-2 · Docker Compose for local prod-like stack | `feature/docker-compose-stack` | Pending ❌ |
-| P14-3 · API documentation (OpenAPI / Redoc) | `feature/api-docs-openapi` | Pending ❌ |
-| P14-4 · End-to-end smoke tests | `feature/e2e-smoke-tests` | Pending ❌ |
-| P14-5 · Deployment guide and runbook | `feature/deployment-guide-runbook` | Pending ❌ |
+| P14-1 · Rate limiting, CORS, and security headers | `feature/prod-security-headers` | Completed ✅ |
+| P14-2 · Docker Compose for local prod-like stack | `feature/docker-compose-stack` | Completed ✅ |
+| P14-3 · API documentation (OpenAPI / Redoc) | `feature/api-docs-openapi` | Completed ✅ |
+| P14-4 · End-to-end smoke tests | `feature/e2e-smoke-tests` | Completed ✅ |
+| P14-5 · Deployment guide and runbook | `feature/deployment-guide-runbook` | Completed ✅ |

@@ -1,0 +1,120 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL Database
+  # ----------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: lakenterprises-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lak_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lak_secure_pass_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-lakenterprises_prod}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lak_user} -d ${POSTGRES_DB:-lakenterprises_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lak_network
+
+  # ----------------------------------------------------------------------------
+  # 2. Redis Cache & Short-Term Memory
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: lakenterprises-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lak_network
+
+  # ----------------------------------------------------------------------------
+  # 3. Qdrant Vector Search Engine
+  # ----------------------------------------------------------------------------
+  qdrant:
+    image: qdrant/qdrant:v1.12.1
+    container_name: lakenterprises-qdrant
+    restart: unless-stopped
+    ports:
+      - "${QDRANT_PORT:-6333}:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lak_network
+
+  # ----------------------------------------------------------------------------
+  # 4. FastAPI Backend & LangGraph Engine (:8001)
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lakenterprises-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-lak_user}:${POSTGRES_PASSWORD:-lak_secure_pass_2026}@postgres:5432/${POSTGRES_DB:-lakenterprises_prod}
+      REDIS_URL: redis://redis:6379/0
+      QDRANT_URL: http://qdrant:6333
+      LLM_PROVIDER: fake
+      ENVIRONMENT: production
+      RATE_LIMIT_PER_MINUTE: 120
+    ports:
+      - "8001:8001"
+    networks:
+      - lak_network
+
+  # ----------------------------------------------------------------------------
+  # 5. Next.js Console UI Shell (:3001)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: lakenterprises-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8001
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    networks:
+      - lak_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  qdrant_data:
+
+networks:
+  lak_network:
+    driver: bridge

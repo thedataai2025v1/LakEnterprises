@@ -27,6 +27,7 @@ from lakenterprises.guardrails.routes import router as guardrails_router
 from lakenterprises.memory.routes import router as memory_router
 from lakenterprises.process.routes import approvals_router
 from lakenterprises.process.routes import router as process_router
+from lakenterprises.security import SecurityHeadersMiddleware
 from lakenterprises.services.audit import AuditService
 from lakenterprises.tools.routes import router as tools_router
 from lakenterprises.workflow.routes import router as workflow_router
@@ -37,22 +38,34 @@ logger = logging.getLogger(__name__)
 def create_app(
     audit_service: Optional[AuditService] = None,
     rate_limit_per_minute: Optional[int] = None,
+    allowed_origins: Optional[list[str]] = None,
+    enable_hsts: bool = True,
 ) -> FastAPI:
     """Build and configure the FastAPI application."""
     app = FastAPI(
         title="LakEnterprises API",
-        description="Enterprise Knowledge Research & Access Control Platform",
-        version="0.1.0",
+        description="Enterprise Knowledge Research, Multi-Agent Governance & Workflow Platform",
+        version="1.0.0",
         docs_url="/docs",
         redoc_url="/redoc",
+        openapi_url="/openapi.json",
     )
 
-    # 1. CORS Middleware
+    # 1. OWASP Security Headers Middleware
+    app.add_middleware(SecurityHeadersMiddleware, enable_hsts=enable_hsts)
+
+    # 2. CORS Middleware
+    origins = allowed_origins or [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=origins if allowed_origins is not None else ["*"],
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
         allow_headers=["*"],
     )
 
