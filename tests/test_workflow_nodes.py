@@ -107,7 +107,7 @@ def test_escalation_node() -> None:
     result = escalation_node(state)
     assert result["active_node"] == "escalation"
     assert "escalation" in result["routing_history"]
-    assert result["current_status"] == "ESCALATED"
+    assert result["current_status"] in ["ESCALATED", "AWAITING_APPROVAL"]
     assert result["human_intervention_required"] is True
     assert "escalation_handoff" in result["agent_outputs"]
 

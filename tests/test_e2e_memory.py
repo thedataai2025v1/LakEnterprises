@@ -1,4 +1,5 @@
 """End-to-end multi-turn enterprise memory test."""
+
 # flake8: noqa: E402
 
 import os

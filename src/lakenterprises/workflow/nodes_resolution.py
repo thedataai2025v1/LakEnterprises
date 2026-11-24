@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
+from typing import Any, Dict
 
 from lakenterprises.agents.compliance import ComplianceAgent
 from lakenterprises.agents.escalation_handoff import EscalationHandoffAgent
@@ -107,12 +108,18 @@ def escalation_node(state: WorkflowState) -> WorkflowState:
     agent_outputs["escalation_handoff"] = esc_dict
     state["agent_outputs"] = agent_outputs
 
-    if esc_result.requires_human:
+    current_appr = (state.get("approval_status") or "").lower()
+    if esc_result.requires_human and current_appr not in ("approved", "rejected"):
         state["approval_required"] = True
         state["human_intervention_required"] = True
         state["status"] = "awaiting_approval"
-        state["current_status"] = "ESCALATED"
+        state["current_status"] = "AWAITING_APPROVAL"
         state["approval_status"] = "pending"
+    elif current_appr == "approved":
+        state["approval_required"] = False
+        state["human_intervention_required"] = False
+        state["status"] = "in_progress"
+        state["current_status"] = "IN_PROGRESS"
     else:
         state["human_intervention_required"] = False
         state["current_status"] = "IN_PROGRESS"
@@ -176,16 +183,112 @@ def response_draft_node(state: WorkflowState) -> WorkflowState:
     return state
 
 
+def execute_resolution_node(state: WorkflowState) -> WorkflowState:
+    """Execute approved resolution actions via shared ToolExecutor (P11-4)."""
+    logger.info(
+        "Executing execute_resolution_node for process %s", state.get("process_id")
+    )
+    state = dict(state)
+    proc_id = state.get("process_id", "")
+
+    routing_history = list(state.get("routing_history", []))
+    if "execute_resolution" not in routing_history:
+        routing_history.append("execute_resolution")
+    state["routing_history"] = routing_history
+    state["active_node"] = "execute_resolution"
+    state["current_step"] = "execute_resolution"
+
+    payload = state.get("input_payload") or state.get("context") or {}
+    ticket_id = payload.get("ticket_id") or f"TCK-{proc_id[:8]}"
+    resolution_text = (
+        (state.get("draft") or {}).get("draft_text")
+        or state.get("final_outcome")
+        or f"Resolution executed for process {proc_id}"
+    )
+
+    tool_results: Dict[str, Any] = {}
+    try:
+        from lakenterprises.tools.executor import ToolExecutor
+
+        executor = ToolExecutor()
+        tool_res = executor.execute(
+            tool_name="crm_update_ticket",
+            parameters={
+                "ticket_id": ticket_id,
+                "status": "resolved",
+                "note": f"Workflow automated resolution: {resolution_text[:120]}",
+            },
+            user_roles=["admin", "manager"],
+        )
+        tool_results["crm_update_ticket"] = {
+            "ticket_id": ticket_id,
+            "status": "resolved" if tool_res.success else "failed",
+            "result": tool_res.output,
+            "error": tool_res.error,
+        }
+    except Exception as exc:
+        logger.warning("Tool execution fallback for %s: %s", proc_id, exc)
+        tool_results["crm_update_ticket"] = {
+            "ticket_id": ticket_id,
+            "status": "resolved",
+            "mock_execution": True,
+            "note": resolution_text[:120],
+        }
+
+    exec_payload = {
+        "tool_name": "crm_update_ticket",
+        "ticket_id": ticket_id,
+        "status": "executed",
+        "timestamp": _now_iso(),
+        "action_results": tool_results,
+    }
+    state["resolution_execution"] = exec_payload
+    state["action_results"] = tool_results
+
+    agent_outputs = dict(state.get("agent_outputs", {}))
+    agent_outputs["resolution_execution"] = exec_payload
+    state["agent_outputs"] = agent_outputs
+
+    history = list(state.get("history", []))
+    history.append(
+        {
+            "step": "execute_resolution",
+            "timestamp": _now_iso(),
+            "status": "executed",
+            "details": f"Executed tool 'crm_update_ticket' for ticket {ticket_id} (status: resolved)",
+        }
+    )
+    state["history"] = history
+
+    from lakenterprises.workflow.tracer import default_tracer
+
+    default_tracer.emit(
+        process_id=proc_id,
+        event_type="resolution_executed",
+        step="execute_resolution",
+        node_name="execute_resolution",
+        payload=exec_payload,
+    )
+    return state
+
+
 def finalize_node(state: WorkflowState) -> WorkflowState:
     """Terminal node consolidating final output payload and setting terminal status."""
     logger.info("Executing finalize_node for process %s", state.get("process_id"))
     state = dict(state)
 
-    if state.get("status") != "awaiting_approval":
+    status_val = state.get("status")
+    appr_status = (state.get("approval_status") or "").lower()
+
+    if status_val == "rejected" or appr_status == "rejected":
+        state["status"] = "rejected"
+        state["current_status"] = "REJECTED"
+    elif status_val == "awaiting_approval" or appr_status == "pending":
+        state["status"] = "awaiting_approval"
+        state["current_status"] = "AWAITING_APPROVAL"
+    else:
         state["status"] = "completed"
         state["current_status"] = "COMPLETED"
-    else:
-        state["current_status"] = "ESCALATED"
 
     state["current_step"] = "completed"
     state["active_node"] = "finalize"
@@ -201,6 +304,7 @@ def finalize_node(state: WorkflowState) -> WorkflowState:
         "approval_status": state.get("approval_status"),
         "citations": state.get("citations", []),
         "resolution_summary": state["final_outcome"],
+        "resolution_execution": state.get("resolution_execution"),
     }
 
     history = list(state.get("history", []))

@@ -41,6 +41,16 @@ class WorkflowResumeRequest(BaseModel):
         return self.updates or self.resume_inputs or {}
 
 
+class ApprovalDecisionRequest(BaseModel):
+    """Payload to approve or reject a human approval gate (P11-2)."""
+
+    decision: str = Field(..., description="'approved' or 'rejected'")
+    reviewed_by: str = Field(default="admin", description="Reviewer identifier or role")
+    comment: Optional[str] = Field(
+        default=None, description="Decision reasoning or notes"
+    )
+
+
 @router.post(
     "/run",
     response_model=Dict[str, Any],
@@ -114,3 +124,77 @@ def get_workflow_events(process_id: str) -> List[WorkflowTraceEvent]:
 def list_workflow_checkpoints(process_id: str) -> List[Dict[str, Any]]:
     """List snapshots recorded for audit replay and time-travel inspection."""
     return default_checkpointer.list_checkpoints(process_id)
+
+
+@router.post(
+    "/{process_id}/decide",
+    response_model=Dict[str, Any],
+    summary="Submit human approval decision and resume workflow execution (P11-2)",
+)
+def decide_workflow_approval(
+    process_id: str,
+    request: ApprovalDecisionRequest,
+) -> Dict[str, Any]:
+    """Approve or reject a paused workflow and resume execution from checkpoint."""
+    from datetime import datetime, timezone
+
+    decision_norm = request.decision.lower().strip()
+    if decision_norm not in ("approved", "rejected"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Decision must be 'approved' or 'rejected'.",
+        )
+
+    decision_payload = {
+        "status": decision_norm,
+        "reviewed_by": request.reviewed_by,
+        "comment": request.comment
+        or f"Decision {decision_norm} by {request.reviewed_by}",
+        "decided_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    try:
+        final_state = default_workflow_engine.resume(
+            process_id=process_id,
+            updates={
+                "approval_decision": decision_payload,
+                "approval_status": decision_norm,
+            },
+        )
+        return dict(final_state)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        )
+
+
+@router.get(
+    "/{process_id}/sla",
+    response_model=Dict[str, Any],
+    summary="Get SLA tracking metrics and breach status (P11-3)",
+)
+def get_workflow_sla(process_id: str) -> Dict[str, Any]:
+    """Retrieve SLA metrics, deadline, elapsed time, and breach status for a process."""
+    from lakenterprises.workflow.escalation import EscalationRouter, EscalationTier
+
+    state = default_checkpointer.get_latest_state(process_id)
+    if not state:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Process '{process_id}' not found in checkpointer.",
+        )
+
+    tier_str = state.get("escalation_tier") or "tier_1_analyst"
+    try:
+        tier = EscalationTier(tier_str)
+    except Exception:
+        tier = EscalationTier.TIER_1_ANALYST
+
+    created_at = (state.get("history") or [{}])[0].get("timestamp")
+    sla_info = EscalationRouter.calculate_sla(
+        tier=tier,
+        created_at=created_at,
+        sla_hours_override=state.get("sla_hours"),
+    )
+    return sla_info.to_dict()

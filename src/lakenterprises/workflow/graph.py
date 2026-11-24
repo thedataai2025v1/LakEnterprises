@@ -7,6 +7,11 @@ from typing import Any, Dict, Optional
 
 from langgraph.graph import END, StateGraph
 
+from lakenterprises.workflow.nodes_approval import (
+    human_approval_node,
+    route_after_approval,
+    route_after_escalation,
+)
 from lakenterprises.workflow.nodes_investigate import (
     document_analyst_node,
     knowledge_retriever_node,
@@ -15,6 +20,7 @@ from lakenterprises.workflow.nodes_orchestrator import orchestrator_node
 from lakenterprises.workflow.nodes_resolution import (
     compliance_node,
     escalation_node,
+    execute_resolution_node,
     finalize_node,
     response_draft_node,
 )
@@ -40,6 +46,8 @@ def build_enterprise_workflow_graph(checkpointer: Optional[Any] = None) -> Any:
     graph.add_node("knowledge_retriever", knowledge_retriever_node)
     graph.add_node("response_drafter", response_draft_node)
     graph.add_node("escalation", escalation_node)
+    graph.add_node("human_approval", human_approval_node)
+    graph.add_node("execute_resolution", execute_resolution_node)
     graph.add_node("finalize", finalize_node)
 
     # 2. Wire sequential and conditional transitions
@@ -49,7 +57,30 @@ def build_enterprise_workflow_graph(checkpointer: Optional[Any] = None) -> Any:
     graph.add_edge("compliance", "knowledge_retriever")
     graph.add_edge("knowledge_retriever", "response_drafter")
     graph.add_edge("response_drafter", "escalation")
-    graph.add_edge("escalation", "finalize")
+
+    # Conditional routing after escalation:
+    # If approval required -> human_approval, else -> execute_resolution
+    graph.add_conditional_edges(
+        "escalation",
+        route_after_escalation,
+        {
+            "human_approval": "human_approval",
+            "execute_resolution": "execute_resolution",
+        },
+    )
+
+    # Conditional routing after human approval:
+    # If approved -> execute_resolution, else (paused/rejected) -> finalize
+    graph.add_conditional_edges(
+        "human_approval",
+        route_after_approval,
+        {
+            "execute_resolution": "execute_resolution",
+            "finalize": "finalize",
+        },
+    )
+
+    graph.add_edge("execute_resolution", "finalize")
     graph.add_edge("finalize", END)
 
     # 3. Compile graph with checkpointer
@@ -177,6 +208,25 @@ class WorkflowEngine:
             context.update(effective_updates)
             state["context"] = context
 
+            appr_status = effective_updates.get("approval_status") or (
+                effective_updates.get("approval_decision", {}).get("status")
+                if isinstance(effective_updates.get("approval_decision"), dict)
+                else None
+            )
+            if appr_status:
+                norm_appr = str(appr_status).lower()
+                state["approval_status"] = norm_appr
+                if norm_appr == "approved":
+                    state["status"] = "in_progress"
+                    state["current_status"] = "IN_PROGRESS"
+                    state["approval_required"] = False
+                    state["human_intervention_required"] = False
+                elif norm_appr == "rejected":
+                    state["status"] = "rejected"
+                    state["current_status"] = "REJECTED"
+                    state["approval_required"] = False
+                    state["human_intervention_required"] = False
+
         self.tracer.emit(
             process_id=process_id,
             event_type="workflow_resumed",
@@ -189,7 +239,15 @@ class WorkflowEngine:
         final_state = dict(raw_final)
         if "context" not in final_state or not final_state["context"]:
             final_state["context"] = dict(state.get("context", {}))
-        if "current_status" not in final_state:
+
+        final_appr = (final_state.get("approval_status") or "").lower()
+        if final_appr == "approved":
+            final_state["status"] = "completed"
+            final_state["current_status"] = "COMPLETED"
+        elif final_appr == "rejected":
+            final_state["status"] = "rejected"
+            final_state["current_status"] = "REJECTED"
+        elif "current_status" not in final_state:
             final_state["current_status"] = final_state.get(
                 "status", "completed"
             ).upper()

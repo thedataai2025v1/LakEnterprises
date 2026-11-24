@@ -38,7 +38,5 @@ wheels/
 htmlcov/
 
 # Local databases and logs
-data/*.db
-data/*.sqlite
-data/*.sqlite3
+data/
 *.log

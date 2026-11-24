@@ -4,11 +4,21 @@ Includes workflow state schemas, checkpointer, orchestrator/investigation/resolu
 StateGraph assembly, workflow runner engine, telemetry tracer, and FastAPI routes.
 """
 
+from lakenterprises.workflow.escalation import (
+    EscalationRouter,
+    EscalationTier,
+    SLAStatus,
+)
 from lakenterprises.workflow.graph import (
     WorkflowEngine,
     build_enterprise_workflow_graph,
     default_workflow_engine,
     global_engine,
+)
+from lakenterprises.workflow.nodes_approval import (
+    human_approval_node,
+    route_after_approval,
+    route_after_escalation,
 )
 from lakenterprises.workflow.nodes_investigate import (
     document_analyst_node,
@@ -21,6 +31,7 @@ from lakenterprises.workflow.nodes_orchestrator import (
 from lakenterprises.workflow.nodes_resolution import (
     compliance_node,
     escalation_node,
+    execute_resolution_node,
     finalize_node,
     response_draft_node,
 )
@@ -54,8 +65,16 @@ __all__ = [
     "knowledge_retriever_node",
     "compliance_node",
     "escalation_node",
+    "human_approval_node",
+    "route_after_approval",
+    "route_after_escalation",
+    "execute_resolution_node",
     "response_draft_node",
     "finalize_node",
+    # Escalation & SLA
+    "EscalationTier",
+    "EscalationRouter",
+    "SLAStatus",
     # Graph and Engine
     "build_enterprise_workflow_graph",
     "WorkflowEngine",

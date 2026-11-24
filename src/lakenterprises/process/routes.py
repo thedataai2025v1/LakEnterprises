@@ -657,3 +657,79 @@ def reject_request(
                 else status.HTTP_400_BAD_REQUEST
             )
             raise HTTPException(status_code=status_code, detail=msg)
+
+
+@approvals_router.post(
+    "/{request_id}/decide",
+    dependencies=[Depends(require_role("admin", "manager"))],
+)
+def decide_request(
+    request_id: str,
+    payload: dict[str, Any],
+    current_user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Unified endpoint to approve or reject a gate and resume workflow if attached."""
+    decision = str(payload.get("decision") or payload.get("status") or "").lower()
+    comment = payload.get("comment")
+
+    with get_db_session() as session:
+        service = ApprovalService(session)
+        try:
+            if decision == "approved":
+                req = service.approve(
+                    request_id=request_id,
+                    reviewed_by_id=str(current_user["id"]),
+                    comment=comment,
+                )
+            elif decision == "rejected":
+                req = service.reject(
+                    request_id=request_id,
+                    reviewed_by_id=str(current_user["id"]),
+                    comment=comment,
+                )
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Decision must be 'approved' or 'rejected'.",
+                )
+
+            resumed_workflow = None
+            if req.target_type in ("workflow", "process") and req.target_id:
+                try:
+                    from lakenterprises.workflow.graph import default_workflow_engine
+
+                    resumed_workflow = default_workflow_engine.resume(
+                        process_id=req.target_id,
+                        updates={
+                            "approval_decision": {
+                                "status": decision,
+                                "reviewed_by": str(
+                                    current_user.get("username", "admin")
+                                ),
+                                "comment": comment,
+                            },
+                            "approval_status": decision,
+                        },
+                    )
+                except Exception as resume_err:
+                    logger.warning("Workflow resume skipped: %s", resume_err)
+
+            return {
+                "id": req.id,
+                "target_type": req.target_type,
+                "target_id": req.target_id,
+                "action": req.action,
+                "status": req.status,
+                "reviewed_by_id": req.reviewed_by_id,
+                "comment": req.comment,
+                "created_at": req.created_at.isoformat() if req.created_at else "",
+                "workflow_resumed": resumed_workflow is not None,
+            }
+        except ValueError as exc:
+            msg = str(exc)
+            status_code = (
+                status.HTTP_404_NOT_FOUND
+                if "not found" in msg.lower()
+                else status.HTTP_400_BAD_REQUEST
+            )
+            raise HTTPException(status_code=status_code, detail=msg)
